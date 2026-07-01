@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>亲子听写对战 - 控制端</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/host.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>亲子听写对战</h1>
+      <div class="room-info">
+        <span class="room-id" id="roomId">加载中...</span>
+        <span class="player-count" id="playerCount">0 人在线</span>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <!-- 二维码区域 -->
+      <div class="card qr-section">
+        <div class="card-title">扫码加入</div>
+        <div class="qr-code" id="qrCode"></div>
+        <p class="qr-hint">选手扫描二维码加入房间</p>
+        <p class="room-url" id="roomUrl"></p>
+      </div>
+
+      <!-- 拍照识别区域 -->
+      <div class="card ocr-section">
+        <div class="card-title">📷 拍照识别词库</div>
+        <div class="ocr-actions">
+          <button class="btn btn-primary" id="takePhotoBtn">拍照</button>
+          <button class="btn btn-secondary" id="manualInputBtn">手动输入</button>
+          <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
+          <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div class="ocr-preview" id="ocrPreview" style="display: none;">
+          <img id="previewImage" alt="预览">
+          <div class="ocr-loading" id="ocrLoading">识别中...</div>
+        </div>
+
+        <div class="word-selection" id="wordSelection" style="display: none;">
+          <p class="selection-hint">选择要听写的词语：</p>
+          <div class="checkbox-group" id="wordList"></div>
+        </div>
+
+        <!-- 手动输入区域 -->
+        <div class="manual-input" id="manualInput" style="display: none;">
+          <p class="selection-hint">手动输入词语（每行一个）：</p>
+          <textarea id="manualWords" placeholder="春天&#10;花朵&#10;蝴蝶" rows="6"></textarea>
+          <button class="btn btn-primary" id="confirmManualBtn">确认添加</button>
+        </div>
+      </div>
+
+      <!-- 计时设置 -->
+      <div class="card timer-section">
+        <div class="card-title">⏱️ 计时设置</div>
+        <div class="timer-buttons">
+          <button class="timer-btn" data-time="5">5秒</button>
+          <button class="timer-btn active" data-time="10">10秒</button>
+          <button class="timer-btn" data-time="15">15秒</button>
+          <button class="timer-btn" data-time="20">20秒</button>
+          <input type="number" id="customTime" min="3" max="60" placeholder="自定义" class="custom-time-input">
+        </div>
+        <p class="current-time">当前设置：<span id="currentTime">10</span> 秒</p>
+      </div>
+
+      <!-- 已选词语 -->
+      <div class="card selected-words-section" id="selectedWordsSection" style="display: none;">
+        <div class="card-title">已选词语</div>
+        <div class="selected-words" id="selectedWords"></div>
+      </div>
+
+      <!-- 开始按钮 -->
+      <div class="start-section">
+        <button class="btn btn-success btn-start" id="startBtn" disabled>开始听写</button>
+      </div>
+
+      <!-- 实时状态 -->
+      <div class="card status-section" id="statusSection" style="display: none;">
+        <div class="card-title">📊 实时状态</div>
+        <div class="current-word" id="currentWord"></div>
+        <div class="progress" id="progress"></div>
+        <div class="player-status" id="playerStatus"></div>
+      </div>
+
+      <!-- 成绩单 -->
+      <div class="card result-section" id="resultSection" style="display: none;">
+        <div class="card-title">听写完成！成绩单</div>
+        <div class="result-list" id="resultList"></div>
+        <div class="result-summary" id="resultSummary"></div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="startPracticeBtn">开始错题练习</button>
+          <button class="btn btn-secondary" id="endBtn">结束</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/host.js"></script>
+</body>
+</html>

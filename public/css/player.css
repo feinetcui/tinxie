@@ -1,0 +1,300 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.join-section,
+.waiting-section,
+.writing-section,
+.score-section,
+.practice-section,
+.final-score-section {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
+
+.join-card,
+.waiting-card,
+.score-card,
+.final-score-card {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.join-card h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.btn-join {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 15px;
+}
+
+.waiting-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.waiting-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.waiting-card p {
+  color: #666;
+}
+
+.writing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.timer {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #667eea;
+  background: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.timer.warning {
+  color: #f44336;
+  animation: blink 0.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.word-progress {
+  font-size: 1rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.pinyin-display {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  letter-spacing: 10px;
+}
+
+.canvas-container {
+  background: white;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  touch-action: none;
+}
+
+#writingCanvas,
+#practiceCanvas {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  cursor: crosshair;
+}
+
+.writing-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.writing-actions .btn {
+  flex: 1;
+  font-size: 1.1rem;
+  padding: 15px;
+}
+
+.result-feedback {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+}
+
+.result-icon {
+  font-size: 5rem;
+  margin-bottom: 20px;
+}
+
+.result-icon.correct {
+  color: #4caf50;
+}
+
+.result-icon.incorrect {
+  color: #f44336;
+}
+
+.result-text {
+  font-size: 2rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.correct-answer {
+  font-size: 1.5rem;
+  color: #ffd700;
+}
+
+.score-card {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.score-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.score-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.score-word {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.score-word.correct {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.score-word.incorrect {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.score-summary {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.practice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.practice-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#practiceWord {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+#practiceProgress {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.final-score-card {
+  text-align: center;
+}
+
+.final-score-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.final-score-number {
+  font-size: 5rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 10px;
+}
+
+.final-score-label {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.final-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.final-stat {
+  text-align: center;
+}
+
+.final-stat-number {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.final-stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .pinyin-display {
+    font-size: 2rem;
+    padding: 15px;
+    letter-spacing: 5px;
+  }
+
+  .timer {
+    font-size: 1.5rem;
+    padding: 8px 16px;
+  }
+
+  .writing-actions .btn {
+    padding: 12px;
+  }
+}

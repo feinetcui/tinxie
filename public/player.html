@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>亲子听写对战 - 选手端</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/player.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 加入房间界面 -->
+    <div class="join-section" id="joinSection">
+      <div class="join-card">
+        <h1>亲子听写对战</h1>
+        <div class="input-group">
+          <label>输入昵称</label>
+          <input type="text" id="nicknameInput" placeholder="请输入你的昵称" maxlength="10">
+        </div>
+        <button class="btn btn-primary btn-join" id="joinBtn" disabled>加入房间</button>
+      </div>
+    </div>
+
+    <!-- 等待开始界面 -->
+    <div class="waiting-section" id="waitingSection" style="display: none;">
+      <div class="waiting-card">
+        <div class="waiting-icon">⏳</div>
+        <h2>等待开始</h2>
+        <p>等待控制端开始听写...</p>
+      </div>
+    </div>
+
+    <!-- 听写界面 -->
+    <div class="writing-section" id="writingSection" style="display: none;">
+      <div class="writing-header">
+        <div class="timer" id="timer">10</div>
+        <div class="word-progress" id="wordProgress">1/9</div>
+      </div>
+
+      <div class="pinyin-display" id="pinyinDisplay">chūn tiān</div>
+
+      <div class="canvas-container">
+        <canvas id="writingCanvas"></canvas>
+      </div>
+
+      <div class="writing-actions">
+        <button class="btn btn-secondary" id="clearBtn">清除</button>
+        <button class="btn btn-primary" id="submitBtn">提交</button>
+      </div>
+    </div>
+
+    <!-- 结果界面 -->
+    <div class="result-feedback" id="resultFeedback" style="display: none;">
+      <div class="result-icon" id="resultIcon">✓</div>
+      <div class="result-text" id="resultText">正确</div>
+      <div class="correct-answer" id="correctAnswer"></div>
+    </div>
+
+    <!-- 成绩单界面 -->
+    <div class="score-section" id="scoreSection" style="display: none;">
+      <div class="score-card">
+        <h2>听写完成！</h2>
+        <div class="score-list" id="scoreList"></div>
+        <div class="score-summary" id="scoreSummary"></div>
+      </div>
+    </div>
+
+    <!-- 错题练习界面 -->
+    <div class="practice-section" id="practiceSection" style="display: none;">
+      <div class="practice-header">
+        <div class="practice-info">
+          <span id="practiceWord">燕子</span>
+          <span id="practiceProgress">1/3</span>
+        </div>
+        <div class="timer" id="practiceTimer">10</div>
+      </div>
+
+      <div class="pinyin-display" id="practicePinyin">yàn zi</div>
+
+      <div class="canvas-container">
+        <canvas id="practiceCanvas"></canvas>
+      </div>
+
+      <div class="writing-actions">
+        <button class="btn btn-secondary" id="practiceClearBtn">清除</button>
+        <button class="btn btn-primary" id="practiceSubmitBtn">提交</button>
+      </div>
+    </div>
+
+    <!-- 最终成绩界面 -->
+    <div class="final-score-section" id="finalScoreSection" style="display: none;">
+      <div class="final-score-card">
+        <h2>最终成绩</h2>
+        <div class="final-score-number" id="finalScoreNumber">0</div>
+        <div class="final-score-label">正确率</div>
+        <div class="final-stats" id="finalStats"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.25.0/dist/index.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/player.js"></script>
+</body>
+</html>
