@@ -2,7 +2,7 @@
 let nickname = '';
 let currentWords = [];
 let currentWordIndex = 0;
-let timeLimit = 10;
+let timeLimit = 15; // 默认15秒，更适合小学生
 let timerInterval = null;
 let canvas = null;
 let ctx = null;
@@ -15,6 +15,58 @@ let practiceWords = [];
 let practiceWordIndex = 0;
 let practiceRound = 0;
 let practiceTotalRounds = 3;
+
+// 语音合成
+const speechSynth = window.speechSynthesis;
+
+// 音效系统
+const audioEffects = {
+  correct: () => playTone(880, 0.2, 'sine'), // 叮咚
+  wrong: () => playTone(220, 0.3, 'sawtooth'), // 低沉提示
+  tick: () => playTone(1000, 0.1, 'sine'), // 倒计时滴答
+  finish: () => { // 欢呼声
+    playTone(523, 0.15, 'sine');
+    setTimeout(() => playTone(659, 0.15, 'sine'), 150);
+    setTimeout(() => playTone(784, 0.3, 'sine'), 300);
+  }
+};
+
+function playTone(frequency, duration, type = 'sine') {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + duration);
+  } catch (e) {
+    console.log('Audio not supported');
+  }
+}
+
+// 语音播报函数
+function speakWord(word) {
+  if (!speechSynth) return;
+
+  // 取消之前的语音
+  speechSynth.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'zh-CN';
+  utterance.rate = 0.8; // 慢速，适合小学生
+  utterance.pitch = 1.1; // 稍高音调，更亲切
+
+  speechSynth.speak(utterance);
+}
 
 // 初始化
 async function init() {
@@ -107,13 +159,15 @@ onMessage('answer_result', (message) => {
   if (message.correct) {
     resultIcon.textContent = '✓';
     resultIcon.className = 'result-icon correct';
-    resultText.textContent = '正确！';
+    resultText.textContent = '太棒了！正确！';
     correctAnswer.textContent = '';
+    audioEffects.correct();
   } else {
     resultIcon.textContent = '✗';
     resultIcon.className = 'result-icon incorrect';
-    resultText.textContent = '错误';
+    resultText.textContent = '没关系，再加油！';
     correctAnswer.textContent = `正确答案：${message.word}`;
+    audioEffects.wrong();
   }
 
   setTimeout(() => {
@@ -125,6 +179,8 @@ onMessage('answer_result', (message) => {
       startTimer();
     } else {
       // 听写完成，等待成绩单
+      audioEffects.finish();
+    }
     }
   }, 2000);
 });
@@ -195,6 +251,9 @@ function showCurrentWord() {
     `${currentWordIndex + 1}/${currentWords.length}`;
 
   clearCanvas(canvas, ctx);
+
+  // 语音播报词语
+  setTimeout(() => speakWord(word), 500);
 }
 
 function showPracticeWord() {
@@ -206,6 +265,9 @@ function showPracticeWord() {
 
   clearCanvas(document.getElementById('practiceCanvas'),
               document.getElementById('practiceCanvas').getContext('2d'));
+
+  // 语音播报词语
+  setTimeout(() => speakWord(word), 500);
 }
 
 function startTimer() {
@@ -218,6 +280,11 @@ function startTimer() {
   timerInterval = setInterval(() => {
     timeLeft--;
     timerEl.textContent = timeLeft;
+
+    // 最后5秒播放提示音
+    if (timeLeft <= 5 && timeLeft > 0) {
+      audioEffects.tick();
+    }
 
     if (timeLeft <= 3) {
       timerEl.classList.add('warning');

@@ -16,80 +16,122 @@
     }
 
     .title {
-      font-size: 2.5rem;
-      color: #333;
-      margin-bottom: 40px;
+      font-size: 3rem;
+      color: white;
+      margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      font-size: 1.5rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 50px;
       text-align: center;
     }
 
     .role-cards {
       display: flex;
-      gap: 20px;
+      gap: 30px;
       flex-wrap: wrap;
       justify-content: center;
     }
 
     .role-card {
       background: white;
-      border-radius: 16px;
-      padding: 40px 30px;
-      width: 200px;
+      border-radius: 30px;
+      padding: 50px 40px;
+      width: 250px;
       text-align: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
       cursor: pointer;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: all 0.3s ease;
       text-decoration: none;
       color: inherit;
     }
 
     .role-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     }
 
     .role-icon {
-      font-size: 4rem;
-      margin-bottom: 20px;
+      font-size: 5rem;
+      margin-bottom: 25px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
     }
 
     .role-title {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       color: #333;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+      font-weight: 700;
     }
 
     .role-desc {
-      font-size: 0.9rem;
+      font-size: 1.1rem;
       color: #666;
+      line-height: 1.6;
     }
 
     .footer {
       margin-top: 60px;
-      color: #999;
-      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    /* 可爱的装饰元素 */
+    .decoration {
+      position: fixed;
+      font-size: 3rem;
+      opacity: 0.3;
+      animation: float 6s infinite ease-in-out;
+    }
+
+    .decoration:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+    .decoration:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
+    .decoration:nth-child(3) { bottom: 20%; left: 20%; animation-delay: 2s; }
+    .decoration:nth-child(4) { bottom: 30%; right: 10%; animation-delay: 3s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(10deg); }
     }
   </style>
 </head>
 <body>
+  <!-- 可爱的装饰元素 -->
+  <div class="decoration">⭐</div>
+  <div class="decoration">🌈</div>
+  <div class="decoration">📚</div>
+  <div class="decoration">✏️</div>
+
   <div class="home-container">
     <h1 class="title">亲子听写对战</h1>
-    
+    <p class="subtitle">和爸爸妈妈一起快乐学汉字！</p>
+
     <div class="role-cards">
       <a href="host.html" class="role-card">
         <div class="role-icon">👨‍👩‍👧</div>
-        <div class="role-title">控制端</div>
-        <div class="role-desc">家长/老师创建房间<br>拍照识别词库</div>
+        <div class="role-title">家长端</div>
+        <div class="role-desc">创建房间<br>选择听写词语</div>
       </a>
-      
+
       <a href="player.html" class="role-card">
         <div class="role-icon">✍️</div>
-        <div class="role-title">选手端</div>
-        <div class="role-desc">学生扫码加入<br>手写汉字作答</div>
+        <div class="role-title">学生端</div>
+        <div class="role-desc">加入房间<br>手写汉字作答</div>
       </a>
     </div>
 
     <div class="footer">
-      <p>支持移动端和PC端 | 使用 Agnes AI 智能识别</p>
+      <p>支持手机和电脑 | 使用 AI 智能识别</p>
     </div>
   </div>
 </body>

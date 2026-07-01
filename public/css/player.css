@@ -21,106 +21,110 @@
 .score-card,
 .final-score-card {
   background: white;
-  border-radius: 16px;
-  padding: 30px;
+  border-radius: 25px;
+  padding: 35px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .join-card h1 {
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   color: #333;
   margin-bottom: 30px;
-}
-
-#roomInput {
-  font-size: 2rem;
-  text-align: center;
-  letter-spacing: 8px;
-  font-weight: 600;
-  color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .btn-join {
   width: 100%;
-  font-size: 1.1rem;
-  padding: 15px;
+  font-size: 1.3rem;
+  padding: 18px;
+  border-radius: 20px;
 }
 
+/* 等待界面 */
 .waiting-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+  font-size: 5rem;
+  margin-bottom: 25px;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50% { transform: scale(1.15); }
 }
 
 .waiting-card h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+  font-size: 1.8rem;
+  margin-bottom: 15px;
   color: #333;
 }
 
 .waiting-card p {
   color: #666;
+  font-size: 1.2rem;
 }
 
+/* 书写界面 */
 .writing-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .timer {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: #667eea;
-  background: white;
-  padding: 10px 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .timer.warning {
-  color: #f44336;
-  animation: blink 0.5s infinite;
+  background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  animation: shake 0.5s infinite;
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 .word-progress {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: white;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
   border-radius: 20px;
 }
 
+/* 拼音显示 - 超大字体 */
 .pinyin-display {
   text-align: center;
-  font-size: 2.5rem;
-  font-weight: 600;
+  font-size: 3.5rem;
+  font-weight: 700;
   color: white;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  letter-spacing: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 25px;
+  border-radius: 20px;
+  margin-bottom: 25px;
+  letter-spacing: 12px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* 画布容器 */
 .canvas-container {
   background: white;
-  border-radius: 12px;
-  padding: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 25px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
   touch-action: none;
 }
 
@@ -128,21 +132,23 @@
 #practiceCanvas {
   display: block;
   width: 100%;
-  border-radius: 8px;
+  border-radius: 15px;
   cursor: crosshair;
 }
 
+/* 操作按钮 */
 .writing-actions {
   display: flex;
-  gap: 10px;
+  gap: 15px;
 }
 
 .writing-actions .btn {
   flex: 1;
-  font-size: 1.1rem;
-  padding: 15px;
+  font-size: 1.3rem;
+  padding: 18px;
 }
 
+/* 结果反馈 */
 .result-feedback {
   position: fixed;
   top: 0;
@@ -153,13 +159,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   z-index: 100;
 }
 
 .result-icon {
-  font-size: 5rem;
-  margin-bottom: 20px;
+  font-size: 7rem;
+  margin-bottom: 25px;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
 }
 
 .result-icon.correct {
@@ -171,25 +183,27 @@
 }
 
 .result-text {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 2.5rem;
+  font-weight: 700;
   color: white;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .correct-answer {
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* 成绩单 */
 .score-card {
-  max-width: 400px;
+  max-width: 450px;
   margin: 0 auto;
 }
 
 .score-card h2 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+  font-size: 1.8rem;
+  margin-bottom: 25px;
   color: #333;
 }
 
@@ -197,36 +211,38 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 25px;
 }
 
 .score-word {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .score-word.correct {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
 }
 
 .score-word.incorrect {
-  background: #ffebee;
-  color: #c62828;
+  background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  color: white;
 }
 
 .score-summary {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: #666;
 }
 
+/* 练习界面 */
 .practice-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .practice-info {
@@ -236,43 +252,47 @@
 }
 
 #practiceWord {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.8rem;
+  font-weight: 700;
   color: white;
 }
 
 #practiceProgress {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* 最终成绩 */
 .final-score-card {
   text-align: center;
 }
 
 .final-score-card h2 {
-  font-size: 1.5rem;
-  margin-bottom: 30px;
+  font-size: 1.8rem;
+  margin-bottom: 35px;
   color: #333;
 }
 
 .final-score-number {
-  font-size: 5rem;
+  font-size: 6rem;
   font-weight: 700;
-  color: #667eea;
-  margin-bottom: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 15px;
 }
 
 .final-score-label {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: #666;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 }
 
 .final-stats {
   display: flex;
   justify-content: center;
-  gap: 30px;
+  gap: 35px;
 }
 
 .final-stat {
@@ -280,29 +300,38 @@
 }
 
 .final-stat-number {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 2.5rem;
+  font-weight: 700;
   color: #333;
 }
 
 .final-stat-label {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #666;
 }
 
+/* 响应式 */
 @media (max-width: 768px) {
   .pinyin-display {
-    font-size: 2rem;
-    padding: 15px;
-    letter-spacing: 5px;
+    font-size: 2.5rem;
+    padding: 20px;
+    letter-spacing: 8px;
   }
 
   .timer {
-    font-size: 1.5rem;
-    padding: 8px 16px;
+    font-size: 2rem;
+    padding: 10px 20px;
   }
 
   .writing-actions .btn {
-    padding: 12px;
+    padding: 15px;
+  }
+
+  .result-icon {
+    font-size: 5rem;
+  }
+
+  .result-text {
+    font-size: 2rem;
   }
 }
