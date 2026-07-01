@@ -123,20 +123,29 @@ async function callSenseNovaAI(messages, env) {
 
 // 上传图片到临时图床获取 URL
 async function uploadImageToTempHost(imageBase64) {
-  // 使用 imgbb.com 免费图床
-  const apiKey = 'f3a2c2e2b0e3a1e5e5f0c1d2b3a4c5d6'; // 免费 API key
-  const response = await fetch('https://api.imgbb.com/1/upload', {
+  // 将 base64 转换为 Blob
+  const binaryString = atob(imageBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], { type: 'image/png' });
+
+  // 使用 0x0.st 上传（免费，无需 API key）
+  const formData = new FormData();
+  formData.append('file', blob, 'image.png');
+
+  const response = await fetch('https://0x0.st', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `key=${apiKey}&image=${encodeURIComponent(imageBase64)}`
+    body: formData
   });
 
   if (!response.ok) {
     throw new Error('Image upload failed');
   }
 
-  const data = await response.json();
-  return data.data.url;
+  const url = await response.text();
+  return url.trim();
 }
 
 // 识别文字
