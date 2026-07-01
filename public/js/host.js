@@ -246,6 +246,9 @@ document.getElementById('customTime').addEventListener('change', (e) => {
 document.getElementById('startBtn').addEventListener('click', () => {
   if (selectedWords.length === 0) return;
 
+  console.log('Starting dictation. Words:', selectedWords, 'Time:', currentTime);
+  console.log('Players:', playerNames);
+
   isPlaying = true;
   currentWordIndex = 0;
   playerResults = {};

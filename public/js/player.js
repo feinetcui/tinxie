@@ -79,6 +79,7 @@ onMessage('error', (message) => {
 });
 
 onMessage('round_started', (message) => {
+  console.log('Round started! Words:', message.words, 'Time:', message.timeLimit);
   currentWords = message.words;
   currentWordIndex = 0;
   timeLimit = message.timeLimit;

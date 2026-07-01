@@ -108,14 +108,14 @@ export class Room {
   }
 
   async handleMessage(ws, data) {
-    console.log('Handling message type:', data.type, 'data keys:', Object.keys(data));
+    console.log('Handling message type:', data.type);
     try {
       switch (data.type) {
         case 'create_room':
           console.log('Creating room, host connected');
           this.host = { ws };
           const roomId = this.roomId || this.state.id.toString();
-          console.log('Sending room_created with roomId:', roomId);
+          console.log('Host set. Sending room_created with roomId:', roomId);
           ws.send(JSON.stringify({
             type: 'room_created',
             roomId: roomId
@@ -147,11 +147,13 @@ export class Room {
           break;
 
         case 'start_round':
-          console.log('Starting round with words:', data.words);
+          console.log('Starting round. Host:', this.host ? 'connected' : 'null', 'Players:', this.players.size);
+          console.log('Words:', data.words);
           this.words = data.words;
           this.currentTime = data.timeLimit;
           this.currentWordIndex = 0;
           this.isPracticing = false;
+          console.log('Broadcasting round_started to', this.players.size, 'players');
           this.broadcastToPlayers({
             type: 'round_started',
             words: data.words,
@@ -159,76 +161,76 @@ export class Room {
           });
           break;
 
-      case 'update_time_limit':
-        this.currentTime = data.timeLimit;
-        this.broadcastToPlayers({
-          type: 'time_limit_updated',
-          timeLimit: data.timeLimit
-        });
-        break;
+        case 'update_time_limit':
+          this.currentTime = data.timeLimit;
+          this.broadcastToPlayers({
+            type: 'time_limit_updated',
+            timeLimit: data.timeLimit
+          });
+          break;
 
-      case 'submit_answer':
-        this.sendToHost({
-          type: 'answer_submitted',
-          nickname: data.nickname,
-          word: data.word,
-          image: data.image
-        });
-        break;
-
-      case 'answer_result': {
-        const player = this.players.get(data.nickname);
-        if (player && player.ws.readyState === WebSocket.OPEN) {
-          player.ws.send(JSON.stringify({
-            type: 'answer_result',
+        case 'submit_answer':
+          this.sendToHost({
+            type: 'answer_submitted',
+            nickname: data.nickname,
             word: data.word,
-            correct: data.correct,
-            recognized: data.recognized
-          }));
+            image: data.image
+          });
+          break;
+
+        case 'answer_result': {
+          const player = this.players.get(data.nickname);
+          if (player && player.ws.readyState === WebSocket.OPEN) {
+            player.ws.send(JSON.stringify({
+              type: 'answer_result',
+              word: data.word,
+              correct: data.correct,
+              recognized: data.recognized
+            }));
+          }
+          break;
         }
-        break;
-      }
 
-      case 'dictation_complete':
-        this.broadcastToPlayers({
-          type: 'dictation_complete',
-          results: data.results
-        });
-        break;
+        case 'dictation_complete':
+          this.broadcastToPlayers({
+            type: 'dictation_complete',
+            results: data.results
+          });
+          break;
 
-      case 'start_practice':
-        this.isPracticing = true;
-        this.broadcastToPlayers({
-          type: 'practice_started',
-          words: data.words,
-          round: data.round,
-          totalRounds: data.totalRounds
-        });
-        break;
+        case 'start_practice':
+          this.isPracticing = true;
+          this.broadcastToPlayers({
+            type: 'practice_started',
+            words: data.words,
+            round: data.round,
+            totalRounds: data.totalRounds
+          });
+          break;
 
-      case 'practice_result':
-        this.sendToHost({
-          type: 'practice_result',
-          nickname: data.nickname,
-          word: data.word,
-          round: data.round,
-          correct: data.correct
-        });
-        break;
+        case 'practice_result':
+          this.sendToHost({
+            type: 'practice_result',
+            nickname: data.nickname,
+            word: data.word,
+            round: data.round,
+            correct: data.correct
+          });
+          break;
 
-      case 'practice_complete':
-        this.sendToHost({
-          type: 'practice_complete',
-          nickname: data.nickname
-        });
-        break;
+        case 'practice_complete':
+          this.sendToHost({
+            type: 'practice_complete',
+            nickname: data.nickname
+          });
+          break;
 
-      case 'final_score':
-        this.broadcastToPlayers({
-          type: 'final_score',
-          scores: data.scores
-        });
-        break;
+        case 'final_score':
+          this.broadcastToPlayers({
+            type: 'final_score',
+            scores: data.scores
+          });
+          break;
       }
     } catch (e) {
       console.error('Handle message error:', e);
@@ -243,10 +245,15 @@ export class Room {
 
   broadcastToPlayers(message) {
     const msg = JSON.stringify(message);
-    for (const [, player] of this.players) {
+    console.log('Broadcasting to players. Count:', this.players.size);
+    let sent = 0;
+    for (const [nickname, player] of this.players) {
+      console.log('Player:', nickname, 'ws state:', player.ws.readyState);
       if (player.ws.readyState === WebSocket.OPEN) {
         player.ws.send(msg);
+        sent++;
       }
     }
+    console.log('Broadcast sent to', sent, 'players');
   }
 }

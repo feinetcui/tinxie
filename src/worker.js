@@ -18,22 +18,28 @@ export default {
     if (url.pathname === '/ws') {
       const roomId = url.searchParams.get('room');
       const nickname = url.searchParams.get('nickname');
+      const upgradeHeader = request.headers.get('Upgrade');
+
+      console.log('WebSocket request received');
+      console.log('roomId:', roomId, 'nickname:', nickname);
+      console.log('Upgrade header:', upgradeHeader);
 
       // 控制端创建房间 - 生成 4 位房间号
       if (!roomId) {
         const newRoomId = Math.floor(1000 + Math.random() * 9000).toString();
+        console.log('Creating new room:', newRoomId);
         const doId = env.ROOM.idFromName(newRoomId);
         const doStub = env.ROOM.get(doId);
-        // 构造新 URL
         const newUrl = new URL(request.url);
         newUrl.pathname = '/websocket';
         newUrl.searchParams.set('role', 'host');
         newUrl.searchParams.set('roomId', newRoomId);
-        // 关键：直接使用原始请求，只修改 URL
+        console.log('Forwarding to DO with URL:', newUrl.toString());
         return doStub.fetch(new Request(newUrl.toString(), request));
       }
 
       // 选手端加入房间
+      console.log('Player joining room:', roomId);
       const doId = env.ROOM.idFromName(roomId);
       const doStub = env.ROOM.get(doId);
       const newUrl = new URL(request.url);
@@ -42,7 +48,7 @@ export default {
       if (nickname) {
         newUrl.searchParams.set('nickname', nickname);
       }
-      // 关键：直接使用原始请求，只修改 URL
+      console.log('Forwarding to DO with URL:', newUrl.toString());
       return doStub.fetch(new Request(newUrl.toString(), request));
     }
 
