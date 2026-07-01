@@ -14,14 +14,16 @@ function getWsUrl(room, nickname) {
 function connectWebSocket(room, nickname) {
   return new Promise((resolve, reject) => {
     const url = getWsUrl(room, nickname);
+    console.log('Connecting to WebSocket:', url);
     ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected successfully');
       resolve(ws);
     };
 
     ws.onmessage = (event) => {
+      console.log('WebSocket message received:', event.data);
       const message = JSON.parse(event.data);
       handleWsMessage(message);
     };
@@ -31,15 +33,18 @@ function connectWebSocket(room, nickname) {
       reject(error);
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket closed');
+    ws.onclose = (event) => {
+      console.log('WebSocket closed, code:', event.code, 'reason:', event.reason);
     };
   });
 }
 
 function sendWsMessage(message) {
   if (ws && ws.readyState === WebSocket.OPEN) {
+    console.log('Sending WebSocket message:', message.type);
     ws.send(JSON.stringify(message));
+  } else {
+    console.error('WebSocket not open, readyState:', ws ? ws.readyState : 'null');
   }
 }
 

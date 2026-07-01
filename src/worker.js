@@ -17,17 +17,20 @@ export default {
     // WebSocket 连接 - 路由到 Durable Object
     if (url.pathname === '/ws') {
       const roomId = url.searchParams.get('room');
+      const nickname = url.searchParams.get('nickname');
 
       // 控制端创建房间 - 生成 4 位房间号
       if (!roomId) {
         const newRoomId = Math.floor(1000 + Math.random() * 9000).toString();
         const doId = env.ROOM.idFromName(newRoomId);
         const doStub = env.ROOM.get(doId);
+        // 构造新 URL
         const newUrl = new URL(request.url);
         newUrl.pathname = '/websocket';
         newUrl.searchParams.set('role', 'host');
         newUrl.searchParams.set('roomId', newRoomId);
-        return doStub.fetch(new Request(newUrl, request));
+        // 关键：直接使用原始请求，只修改 URL
+        return doStub.fetch(new Request(newUrl.toString(), request));
       }
 
       // 选手端加入房间
@@ -36,7 +39,11 @@ export default {
       const newUrl = new URL(request.url);
       newUrl.pathname = '/websocket';
       newUrl.searchParams.set('roomId', roomId);
-      return doStub.fetch(new Request(newUrl, request));
+      if (nickname) {
+        newUrl.searchParams.set('nickname', nickname);
+      }
+      // 关键：直接使用原始请求，只修改 URL
+      return doStub.fetch(new Request(newUrl.toString(), request));
     }
 
     // 静态资源 - Workers Sites

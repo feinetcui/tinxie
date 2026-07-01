@@ -46,7 +46,10 @@ export class Room {
 
   handleWebSocketUpgrade(request) {
     const upgradeHeader = request.headers.get('Upgrade');
+    console.log('WebSocket upgrade request, Upgrade header:', upgradeHeader);
+
     if (!upgradeHeader || upgradeHeader !== 'websocket') {
+      console.log('Missing or invalid Upgrade header');
       return new Response('Expected Upgrade: websocket', { status: 426 });
     }
 
@@ -55,13 +58,21 @@ export class Room {
     const nickname = url.searchParams.get('nickname') || '';
     const roomId = url.searchParams.get('roomId') || this.state.id.toString();
 
+    console.log('Creating WebSocket for role:', role, 'nickname:', nickname, 'roomId:', roomId);
+
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
 
-    // 保存 roomId 以便后续使用
+    // 保存 roomId 和 nickname
     this.roomId = roomId;
 
-    this.state.acceptWebSocket(server, role === 'host' ? ['host'] : [`player:${nickname}`]);
+    // 对于选手，使用 nickname 作为标识
+    const tags = role === 'host' ? ['host'] : [`player:${nickname}`];
+    console.log('WebSocket tags:', tags);
+
+    this.state.acceptWebSocket(server, tags);
+
+    console.log('WebSocket accepted for role:', role);
 
     return new Response(null, {
       status: 101,
@@ -70,19 +81,23 @@ export class Room {
   }
 
   async webSocketMessage(ws, message) {
+    console.log('WebSocket message received, length:', message.length);
     try {
       const data = JSON.parse(message);
+      console.log('Parsed message type:', data.type);
       await this.handleMessage(ws, data);
     } catch (e) {
-      console.error('Message parse error:', e);
+      console.error('Message parse error:', e.message);
     }
   }
 
   async webSocketClose(ws, code, reason) {
+    console.log('WebSocket closed, code:', code);
     // 移除断开的连接
     for (const [nickname, player] of this.players) {
       if (player.ws === ws) {
         this.players.delete(nickname);
+        console.log('Player disconnected:', nickname, 'Remaining:', this.players.size);
         this.sendToHost({
           type: 'player_left',
           playerCount: this.players.size
@@ -93,47 +108,56 @@ export class Room {
   }
 
   async handleMessage(ws, data) {
-    switch (data.type) {
-      case 'create_room':
-        this.host = { ws };
-        ws.send(JSON.stringify({
-          type: 'room_created',
-          roomId: this.roomId || this.state.id.toString()
-        }));
-        break;
-
-      case 'join_room':
-        if (this.players.has(data.nickname)) {
+    console.log('Handling message type:', data.type, 'data keys:', Object.keys(data));
+    try {
+      switch (data.type) {
+        case 'create_room':
+          console.log('Creating room, host connected');
+          this.host = { ws };
+          const roomId = this.roomId || this.state.id.toString();
+          console.log('Sending room_created with roomId:', roomId);
           ws.send(JSON.stringify({
-            type: 'error',
-            message: '昵称已被使用'
+            type: 'room_created',
+            roomId: roomId
           }));
-          return;
-        }
-        this.players.set(data.nickname, { ws });
-        ws.send(JSON.stringify({
-          type: 'room_joined',
-          roomId: data.roomId,
-          nickname: data.nickname
-        }));
-        this.sendToHost({
-          type: 'player_joined',
-          nickname: data.nickname,
-          playerCount: this.players.size
-        });
-        break;
+          break;
 
-      case 'start_round':
-        this.words = data.words;
-        this.currentTime = data.timeLimit;
-        this.currentWordIndex = 0;
-        this.isPracticing = false;
-        this.broadcastToPlayers({
-          type: 'round_started',
-          words: data.words,
-          timeLimit: data.timeLimit
-        });
-        break;
+        case 'join_room':
+          console.log('Player joining:', data.nickname, 'to room:', data.roomId);
+          if (this.players.has(data.nickname)) {
+            console.log('Nickname already taken:', data.nickname);
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: '昵称已被使用'
+            }));
+            return;
+          }
+          this.players.set(data.nickname, { ws });
+          console.log('Player joined. Total players:', this.players.size);
+          ws.send(JSON.stringify({
+            type: 'room_joined',
+            roomId: data.roomId,
+            nickname: data.nickname
+          }));
+          this.sendToHost({
+            type: 'player_joined',
+            nickname: data.nickname,
+            playerCount: this.players.size
+          });
+          break;
+
+        case 'start_round':
+          console.log('Starting round with words:', data.words);
+          this.words = data.words;
+          this.currentTime = data.timeLimit;
+          this.currentWordIndex = 0;
+          this.isPracticing = false;
+          this.broadcastToPlayers({
+            type: 'round_started',
+            words: data.words,
+            timeLimit: data.timeLimit
+          });
+          break;
 
       case 'update_time_limit':
         this.currentTime = data.timeLimit;
@@ -205,6 +229,9 @@ export class Room {
           scores: data.scores
         });
         break;
+      }
+    } catch (e) {
+      console.error('Handle message error:', e);
     }
   }
 
