@@ -84,6 +84,8 @@ async function handleHandwritingCheck(request, env) {
 // 调用 Agnes AI
 async function callAgnesAI(messages, env) {
   const apiKey = env.AGNES_API_KEY;
+  console.log('Calling Agnes AI, API key exists:', !!apiKey);
+
   const response = await fetch('https://apihub.agnes-ai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -97,8 +99,11 @@ async function callAgnesAI(messages, env) {
     })
   });
 
+  console.log('Agnes AI response status:', response.status);
+
   if (!response.ok) {
     const error = await response.text();
+    console.error('Agnes AI error:', error);
     throw new Error(`Agnes AI API error: ${error}`);
   }
 
