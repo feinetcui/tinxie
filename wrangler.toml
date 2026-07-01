@@ -3,6 +3,11 @@ main = "src/worker.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# 自定义域名
+routes = [
+  { pattern = "tx.aipdy.com/*", zone_name = "aipdy.com" }
+]
+
 # 静态资源
 [assets]
 directory = "./public"

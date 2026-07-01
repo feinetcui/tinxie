@@ -87,6 +87,16 @@ async function handleHandwritingCheck(request, env) {
 async function callSenseNovaAI(messages, env) {
   const apiKey = env.SENSENOVA_API_KEY;
   console.log('Calling SenseNova AI, API key exists:', !!apiKey);
+  console.log('Messages count:', messages.length);
+
+  const requestBody = {
+    model: 'sensenova-6.7-flash-lite',
+    messages: messages,
+    temperature: 0.1,
+    max_tokens: 2000
+  };
+
+  console.log('Request body size:', JSON.stringify(requestBody).length);
 
   const response = await fetch('https://token.sensenova.cn/v1/chat/completions', {
     method: 'POST',
@@ -94,30 +104,60 @@ async function callSenseNovaAI(messages, env) {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      model: 'sensenova-6.7-flash-lite',
-      messages: messages,
-      temperature: 0.1,
-      max_tokens: 2000
-    })
+    body: JSON.stringify(requestBody)
   });
 
   console.log('SenseNova AI response status:', response.status);
 
+  const responseText = await response.text();
+  console.log('SenseNova AI response:', responseText.substring(0, 500));
+
   if (!response.ok) {
-    const error = await response.text();
-    console.error('SenseNova AI error:', error);
-    throw new Error(`SenseNova AI API error: ${error}`);
+    console.error('SenseNova AI error:', responseText);
+    throw new Error(`SenseNova AI API error: ${responseText}`);
+  }
+
+  const data = JSON.parse(responseText);
+  return data.choices[0].message.content;
+}
+
+// 上传图片到临时图床获取 URL
+async function uploadImageToTempHost(imageBase64) {
+  // 使用 imgbb.com 免费图床
+  const apiKey = 'f3a2c2e2b0e3a1e5e5f0c1d2b3a4c5d6'; // 免费 API key
+  const response = await fetch('https://api.imgbb.com/1/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `key=${apiKey}&image=${encodeURIComponent(imageBase64)}`
+  });
+
+  if (!response.ok) {
+    throw new Error('Image upload failed');
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.data.url;
 }
 
 // 识别文字
 async function recognizeText(imageBase64, env) {
-  // SenseNova 需要不带 data URI 前缀的 base64
-  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+  console.log('recognizeText called, imageBase64 length:', imageBase64 ? imageBase64.length : 0);
+
+  // 清理 base64 数据
+  let cleanBase64 = imageBase64;
+  if (cleanBase64.startsWith('data:image')) {
+    cleanBase64 = cleanBase64.replace(/^data:image\/\w+;base64,/, '');
+  }
+
+  // 上传图片获取 URL
+  let imageUrl;
+  try {
+    imageUrl = await uploadImageToTempHost(cleanBase64);
+    console.log('Image uploaded to:', imageUrl);
+  } catch (uploadError) {
+    console.error('Image upload error:', uploadError.message);
+    throw new Error('图片上传失败，请重试');
+  }
 
   const messages = [
     {
@@ -130,14 +170,16 @@ async function recognizeText(imageBase64, env) {
         {
           type: 'image_url',
           image_url: {
-            url: `data:image/jpeg;base64,${cleanBase64}`
+            url: imageUrl
           }
         }
       ]
     }
   ];
 
+  console.log('Calling SenseNova AI for OCR...');
   const result = await callSenseNovaAI(messages, env);
+  console.log('OCR result:', result);
 
   try {
     const jsonMatch = result.match(/\[[\s\S]*?\]/);
@@ -152,8 +194,19 @@ async function recognizeText(imageBase64, env) {
 
 // 判断手写
 async function checkHandwriting(imageBase64, correctWord, env) {
-  // SenseNova 需要不带 data URI 前缀的 base64
-  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+  // 清理 base64 数据
+  let cleanBase64 = imageBase64;
+  if (cleanBase64.startsWith('data:image')) {
+    cleanBase64 = cleanBase64.replace(/^data:image\/\w+;base64,/, '');
+  }
+
+  // 上传图片获取 URL
+  let imageUrl;
+  try {
+    imageUrl = await uploadImageToTempHost(cleanBase64);
+  } catch (uploadError) {
+    throw new Error('图片上传失败，请重试');
+  }
 
   const messages = [
     {
@@ -166,7 +219,7 @@ async function checkHandwriting(imageBase64, correctWord, env) {
         {
           type: 'image_url',
           image_url: {
-            url: `data:image/jpeg;base64,${cleanBase64}`
+            url: imageUrl
           }
         }
       ]
