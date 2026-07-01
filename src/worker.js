@@ -61,6 +61,8 @@ export default {
 async function handleOCR(request, env) {
   try {
     const { image } = await request.json();
+    console.log('OCR request received, image length:', image ? image.length : 0);
+
     const words = await recognizeText(image, env);
     return Response.json({ success: true, words });
   } catch (error) {
@@ -114,6 +116,9 @@ async function callSenseNovaAI(messages, env) {
 
 // 识别文字
 async function recognizeText(imageBase64, env) {
+  // SenseNova 需要不带 data URI 前缀的 base64
+  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
   const messages = [
     {
       role: 'user',
@@ -125,7 +130,7 @@ async function recognizeText(imageBase64, env) {
         {
           type: 'image_url',
           image_url: {
-            url: `data:image/jpeg;base64,${imageBase64}`
+            url: `data:image/jpeg;base64,${cleanBase64}`
           }
         }
       ]
@@ -147,6 +152,9 @@ async function recognizeText(imageBase64, env) {
 
 // 判断手写
 async function checkHandwriting(imageBase64, correctWord, env) {
+  // SenseNova 需要不带 data URI 前缀的 base64
+  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
   const messages = [
     {
       role: 'user',
@@ -158,7 +166,7 @@ async function checkHandwriting(imageBase64, correctWord, env) {
         {
           type: 'image_url',
           image_url: {
-            url: `data:image/jpeg;base64,${imageBase64}`
+            url: `data:image/jpeg;base64,${cleanBase64}`
           }
         }
       ]
