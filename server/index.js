@@ -205,6 +205,16 @@ function handleMessage(ws, message, req) {
         });
       }
       break;
+
+    case 'practice_complete':
+      const pcRoom = roomManager.getRoom(message.roomId);
+      if (pcRoom && pcRoom.host.ws.readyState === WebSocket.OPEN) {
+        pcRoom.host.ws.send(JSON.stringify({
+          type: 'practice_complete',
+          nickname: message.nickname
+        }));
+      }
+      break;
   }
 }
 

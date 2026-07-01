@@ -27,7 +27,7 @@
       </div>
 
       <!-- 拍照识别区域 -->
-      <div class="card ocr-section">
+      <div class="card ocr-section" id="ocrSection">
         <div class="card-title">📷 拍照识别词库</div>
         <div class="ocr-actions">
           <button class="btn btn-primary" id="takePhotoBtn">拍照</button>
@@ -55,7 +55,7 @@
       </div>
 
       <!-- 计时设置 -->
-      <div class="card timer-section">
+      <div class="card timer-section" id="timerSection">
         <div class="card-title">⏱️ 计时设置</div>
         <div class="timer-buttons">
           <button class="timer-btn" data-time="5">5秒</button>
@@ -100,6 +100,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.25.0/dist/index.js"></script>
   <script src="js/common.js"></script>
   <script src="js/host.js"></script>
 </body>

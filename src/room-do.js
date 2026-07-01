@@ -1,0 +1,225 @@
+// Durable Object: Room - 管理房间状态和 WebSocket 连接
+export class Room {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.players = new Map(); // nickname -> { ws, wsKey }
+    this.host = null; // { ws, wsKey }
+    this.words = [];
+    this.currentTime = 10;
+    this.currentWordIndex = 0;
+    this.isPracticing = false;
+
+    // 恢复 WebSocket 连接
+    this.state.blockConcurrencyWhile(async () => {
+      const wsKeys = this.state.getWebSockets();
+      for (const ws of wsKeys) {
+        const tag = this.state.getTags(ws);
+        if (tag.includes('host')) {
+          this.host = { ws, wsKey: ws };
+        } else {
+          const nickname = tag.find(t => t.startsWith('player:'))?.replace('player:', '');
+          if (nickname) {
+            this.players.set(nickname, { ws, wsKey: ws });
+          }
+        }
+      }
+    });
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/websocket') {
+      return this.handleWebSocketUpgrade(request);
+    }
+
+    if (url.pathname === '/info') {
+      return Response.json({
+        playerCount: this.players.size,
+        isPracticing: this.isPracticing
+      });
+    }
+
+    return new Response('Not Found', { status: 404 });
+  }
+
+  handleWebSocketUpgrade(request) {
+    const upgradeHeader = request.headers.get('Upgrade');
+    if (!upgradeHeader || upgradeHeader !== 'websocket') {
+      return new Response('Expected Upgrade: websocket', { status: 426 });
+    }
+
+    const url = new URL(request.url);
+    const role = url.searchParams.get('role') || 'player';
+    const nickname = url.searchParams.get('nickname') || '';
+    const roomId = url.searchParams.get('roomId') || this.state.id.toString();
+
+    const pair = new WebSocketPair();
+    const [client, server] = Object.values(pair);
+
+    // 保存 roomId 以便后续使用
+    this.roomId = roomId;
+
+    this.state.acceptWebSocket(server, role === 'host' ? ['host'] : [`player:${nickname}`]);
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client
+    });
+  }
+
+  async webSocketMessage(ws, message) {
+    try {
+      const data = JSON.parse(message);
+      await this.handleMessage(ws, data);
+    } catch (e) {
+      console.error('Message parse error:', e);
+    }
+  }
+
+  async webSocketClose(ws, code, reason) {
+    // 移除断开的连接
+    for (const [nickname, player] of this.players) {
+      if (player.ws === ws) {
+        this.players.delete(nickname);
+        this.sendToHost({
+          type: 'player_left',
+          playerCount: this.players.size
+        });
+        break;
+      }
+    }
+  }
+
+  async handleMessage(ws, data) {
+    switch (data.type) {
+      case 'create_room':
+        this.host = { ws };
+        ws.send(JSON.stringify({
+          type: 'room_created',
+          roomId: this.roomId || this.state.id.toString()
+        }));
+        break;
+
+      case 'join_room':
+        if (this.players.has(data.nickname)) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: '昵称已被使用'
+          }));
+          return;
+        }
+        this.players.set(data.nickname, { ws });
+        ws.send(JSON.stringify({
+          type: 'room_joined',
+          roomId: data.roomId,
+          nickname: data.nickname
+        }));
+        this.sendToHost({
+          type: 'player_joined',
+          nickname: data.nickname,
+          playerCount: this.players.size
+        });
+        break;
+
+      case 'start_round':
+        this.words = data.words;
+        this.currentTime = data.timeLimit;
+        this.currentWordIndex = 0;
+        this.isPracticing = false;
+        this.broadcastToPlayers({
+          type: 'round_started',
+          words: data.words,
+          timeLimit: data.timeLimit
+        });
+        break;
+
+      case 'update_time_limit':
+        this.currentTime = data.timeLimit;
+        this.broadcastToPlayers({
+          type: 'time_limit_updated',
+          timeLimit: data.timeLimit
+        });
+        break;
+
+      case 'submit_answer':
+        this.sendToHost({
+          type: 'answer_submitted',
+          nickname: data.nickname,
+          word: data.word,
+          image: data.image
+        });
+        break;
+
+      case 'answer_result': {
+        const player = this.players.get(data.nickname);
+        if (player && player.ws.readyState === WebSocket.OPEN) {
+          player.ws.send(JSON.stringify({
+            type: 'answer_result',
+            word: data.word,
+            correct: data.correct,
+            recognized: data.recognized
+          }));
+        }
+        break;
+      }
+
+      case 'dictation_complete':
+        this.broadcastToPlayers({
+          type: 'dictation_complete',
+          results: data.results
+        });
+        break;
+
+      case 'start_practice':
+        this.isPracticing = true;
+        this.broadcastToPlayers({
+          type: 'practice_started',
+          words: data.words,
+          round: data.round,
+          totalRounds: data.totalRounds
+        });
+        break;
+
+      case 'practice_result':
+        this.sendToHost({
+          type: 'practice_result',
+          nickname: data.nickname,
+          word: data.word,
+          round: data.round,
+          correct: data.correct
+        });
+        break;
+
+      case 'practice_complete':
+        this.sendToHost({
+          type: 'practice_complete',
+          nickname: data.nickname
+        });
+        break;
+
+      case 'final_score':
+        this.broadcastToPlayers({
+          type: 'final_score',
+          scores: data.scores
+        });
+        break;
+    }
+  }
+
+  sendToHost(message) {
+    if (this.host && this.host.ws.readyState === WebSocket.OPEN) {
+      this.host.ws.send(JSON.stringify(message));
+    }
+  }
+
+  broadcastToPlayers(message) {
+    const msg = JSON.stringify(message);
+    for (const [, player] of this.players) {
+      if (player.ws.readyState === WebSocket.OPEN) {
+        player.ws.send(msg);
+      }
+    }
+  }
+}

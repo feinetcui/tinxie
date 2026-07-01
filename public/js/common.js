@@ -2,14 +2,19 @@
 let ws = null;
 let roomId = null;
 
-function getWsUrl() {
+function getWsUrl(room, nickname) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}`;
+  const base = `${protocol}//${window.location.host}`;
+  const params = new URLSearchParams();
+  if (room) params.set('room', room);
+  if (nickname) params.set('nickname', nickname);
+  return `${base}/ws?${params.toString()}`;
 }
 
-function connectWebSocket() {
+function connectWebSocket(room, nickname) {
   return new Promise((resolve, reject) => {
-    ws = new WebSocket(getWsUrl());
+    const url = getWsUrl(room, nickname);
+    ws = new WebSocket(url);
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -28,7 +33,6 @@ function connectWebSocket() {
 
     ws.onclose = () => {
       console.log('WebSocket closed');
-      // 可以在这里处理重连逻辑
     };
   });
 }

@@ -10,6 +10,12 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
+// 错题练习状态
+let practiceWords = [];
+let practiceWordIndex = 0;
+let practiceRound = 0;
+let practiceTotalRounds = 3;
+
 // 初始化
 async function init() {
   // 检查 URL 参数
@@ -63,7 +69,8 @@ function showNicknameDialog() {
 
 async function joinRoom() {
   try {
-    await connectWebSocket();
+    // 选手端连接时传入 room 和 nickname
+    await connectWebSocket(roomId, nickname);
     sendWsMessage({
       type: 'join_room',
       roomId,
@@ -159,10 +166,12 @@ onMessage('dictation_complete', (message) => {
 onMessage('practice_started', (message) => {
   hideElement('scoreSection');
   showElement('practiceSection');
-  
-  currentWords = message.words;
-  currentWordIndex = 0;
-  
+
+  practiceWords = message.words;
+  practiceWordIndex = 0;
+  practiceRound = 1;
+  practiceTotalRounds = message.totalRounds || 3;
+
   showPracticeWord();
   startPracticeTimer();
 });
@@ -202,13 +211,13 @@ function showCurrentWord() {
 }
 
 function showPracticeWord() {
-  const word = currentWords[currentWordIndex];
+  const word = practiceWords[practiceWordIndex];
   document.getElementById('practicePinyin').textContent = toPinyin(word);
   document.getElementById('practiceWord').textContent = word;
-  document.getElementById('practiceProgress').textContent = 
-    `${currentWordIndex + 1}/${currentWords.length}`;
-  
-  clearCanvas(document.getElementById('practiceCanvas'), 
+  document.getElementById('practiceProgress').textContent =
+    `第${practiceRound}次 / 共${practiceTotalRounds}次`;
+
+  clearCanvas(document.getElementById('practiceCanvas'),
               document.getElementById('practiceCanvas').getContext('2d'));
 }
 
@@ -281,11 +290,11 @@ function submitAnswer() {
 
 function submitPracticeAnswer() {
   clearInterval(timerInterval);
-  
-  const word = currentWords[currentWordIndex];
+
+  const word = practiceWords[practiceWordIndex];
   const practiceCanvas = document.getElementById('practiceCanvas');
   const imageData = practiceCanvas.toDataURL('image/png').split(',')[1];
-  
+
   // 检查手写
   fetch('/api/check-handwriting', {
     method: 'POST',
@@ -299,18 +308,57 @@ function submitPracticeAnswer() {
       roomId,
       nickname,
       word,
-      round: currentWordIndex + 1,
+      round: practiceRound,
       correct: result.correct
     });
-    
-    currentWordIndex++;
-    if (currentWordIndex < currentWords.length) {
-      showPracticeWord();
-      startPracticeTimer();
+
+    // 显示结果反馈
+    showElement('resultFeedback');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultText = document.getElementById('resultText');
+    const correctAnswer = document.getElementById('correctAnswer');
+
+    if (result.correct) {
+      resultIcon.textContent = '✓';
+      resultIcon.className = 'result-icon correct';
+      resultText.textContent = '正确！';
+      correctAnswer.textContent = '';
     } else {
-      // 练习完成
+      resultIcon.textContent = '✗';
+      resultIcon.className = 'result-icon incorrect';
+      resultText.textContent = '错误';
+      correctAnswer.textContent = `正确答案：${word}`;
     }
+
+    setTimeout(() => {
+      hideElement('resultFeedback');
+      advancePractice();
+    }, 1500);
   });
+}
+
+function advancePractice() {
+  practiceRound++;
+
+  if (practiceRound > practiceTotalRounds) {
+    // 当前词练习完毕，进入下一个词
+    practiceRound = 1;
+    practiceWordIndex++;
+
+    if (practiceWordIndex >= practiceWords.length) {
+      // 全部练习完成
+      hideElement('practiceSection');
+      sendWsMessage({
+        type: 'practice_complete',
+        roomId,
+        nickname
+      });
+      return;
+    }
+  }
+
+  showPracticeWord();
+  startPracticeTimer();
 }
 
 // 画布初始化
@@ -454,6 +502,11 @@ document.getElementById('practiceSubmitBtn').addEventListener('click', submitPra
 
 // 拼音转换
 function toPinyin(word) {
+  // 使用 pinyin-pro 库
+  if (window.pinyinPro) {
+    return window.pinyinPro.pinyin(word, { type: 'array' }).join(' ');
+  }
+  // 如果 pinyin-pro 未加载，使用简单的映射
   const pinyinMap = {
     '春': 'chūn', '天': 'tiān', '花': 'huā', '朵': 'duǒ',
     '蝴': 'hú', '蝶': 'dié', '燕': 'yàn', '子': 'zi',
