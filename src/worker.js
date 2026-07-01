@@ -81,30 +81,30 @@ async function handleHandwritingCheck(request, env) {
   }
 }
 
-// 调用 Agnes AI
-async function callAgnesAI(messages, env) {
-  const apiKey = env.AGNES_API_KEY;
-  console.log('Calling Agnes AI, API key exists:', !!apiKey);
+// 调用 SenseNova AI
+async function callSenseNovaAI(messages, env) {
+  const apiKey = env.SENSENOVA_API_KEY;
+  console.log('Calling SenseNova AI, API key exists:', !!apiKey);
 
-  const response = await fetch('https://apihub.agnes-ai.com/v1/chat/completions', {
+  const response = await fetch('https://api.sensenova.cn/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'agnes-2.0-flash',
+      model: 'sensenova-6.7-flash-lite',
       messages: messages,
       temperature: 0.1
     })
   });
 
-  console.log('Agnes AI response status:', response.status);
+  console.log('SenseNova AI response status:', response.status);
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('Agnes AI error:', error);
-    throw new Error(`Agnes AI API error: ${error}`);
+    console.error('SenseNova AI error:', error);
+    throw new Error(`SenseNova AI API error: ${error}`);
   }
 
   const data = await response.json();
@@ -131,7 +131,7 @@ async function recognizeText(imageBase64, env) {
     }
   ];
 
-  const result = await callAgnesAI(messages, env);
+  const result = await callSenseNovaAI(messages, env);
 
   try {
     const jsonMatch = result.match(/\[[\s\S]*?\]/);
@@ -164,7 +164,7 @@ async function checkHandwriting(imageBase64, correctWord, env) {
     }
   ];
 
-  const result = await callAgnesAI(messages, env);
+  const result = await callSenseNovaAI(messages, env);
 
   try {
     const jsonMatch = result.match(/\{[\s\S]*?\}/);
