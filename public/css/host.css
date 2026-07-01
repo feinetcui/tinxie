@@ -2,12 +2,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 0;
+  padding: 25px 0;
   color: white;
 }
 
 .header h1 {
-  font-size: 1.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .room-info {
@@ -16,55 +18,55 @@
   align-items: center;
 }
 
-.room-id {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+.player-count {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
   border-radius: 20px;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
-.player-count {
-  background: rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 20px;
-}
-
+/* 房间号显示 - 超大显眼 */
 .room-number-section {
   text-align: center;
+  padding: 30px;
 }
 
 .room-number {
-  font-size: 4rem;
-  font-weight: 700;
-  color: #667eea;
+  font-size: 5rem;
+  font-weight: 800;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 20px 0;
-  letter-spacing: 10px;
+  margin: 25px 0;
+  letter-spacing: 15px;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .room-hint {
   color: #666;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
+/* OCR 区域 */
 .ocr-actions {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .ocr-preview {
   position: relative;
-  margin-top: 15px;
+  margin-top: 20px;
 }
 
 .ocr-preview img {
   max-width: 100%;
   max-height: 300px;
-  border-radius: 8px;
+  border-radius: 15px;
   object-fit: contain;
 }
 
@@ -73,175 +75,210 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 15px 25px;
+  border-radius: 15px;
+  font-size: 1.2rem;
 }
 
 .selection-hint {
   color: #666;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
 }
 
 .word-selection .checkbox-group {
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
+  padding: 10px;
 }
 
+/* 手动输入区域 */
 .manual-input textarea {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 15px;
+  border: 3px solid #ddd;
+  border-radius: 15px;
+  font-size: 1.2rem;
   resize: vertical;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  font-family: inherit;
 }
 
+.manual-input textarea:focus {
+  border-color: #667eea;
+  outline: none;
+}
+
+/* 计时设置 */
 .timer-section {
   text-align: center;
+  padding: 25px;
 }
 
 .timer-buttons {
   justify-content: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  gap: 12px;
 }
 
 .custom-time-input {
-  width: 80px;
-  padding: 8px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  width: 100px;
+  padding: 12px;
+  border: 3px solid #ddd;
+  border-radius: 12px;
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.custom-time-input:focus {
+  border-color: #667eea;
+  outline: none;
 }
 
 .current-time {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
+/* 已选词语 */
 .selected-words-section {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
+  justify-content: center;
 }
 
 .selected-word {
-  background: #e3f2fd;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: #1976d2;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .selected-word:hover {
-  background: #bbdefb;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.selected-word.remove {
-  background: #ffebee;
-  color: #c62828;
-}
-
+/* 开始按钮 */
 .start-section {
   text-align: center;
-  margin: 30px 0;
+  margin: 40px 0;
 }
 
 .btn-start {
-  font-size: 1.2rem;
-  padding: 15px 50px;
+  font-size: 1.5rem;
+  padding: 20px 60px;
+  border-radius: 25px;
 }
 
+/* 实时状态 */
 .status-section {
   text-align: center;
+  padding: 30px;
 }
 
 .current-word {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: #667eea;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .progress {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #666;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  font-weight: 500;
 }
 
 .player-status {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .player-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  font-size: 1.1rem;
 }
 
 .player-name {
-  font-weight: 500;
+  font-weight: 600;
 }
 
+/* 成绩单 */
 .result-section {
   text-align: center;
+  padding: 30px;
 }
 
 .result-list {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  margin: 20px 0;
+  gap: 12px;
+  margin: 25px 0;
 }
 
 .result-word {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .result-word.correct {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
 }
 
 .result-word.incorrect {
-  background: #ffebee;
-  color: #c62828;
+  background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  color: white;
 }
 
 .result-summary {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  font-weight: 500;
 }
 
 .result-actions {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
+/* 响应式 */
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
   }
 
-  .room-info {
-    flex-direction: column;
-    gap: 10px;
+  .room-number {
+    font-size: 3.5rem;
+    letter-spacing: 8px;
   }
 
   .ocr-actions {
@@ -254,5 +291,9 @@
 
   .result-actions {
     flex-direction: column;
+  }
+
+  .btn-start {
+    width: 100%;
   }
 }

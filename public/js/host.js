@@ -1,6 +1,6 @@
 // 控制端逻辑
 let selectedWords = [];
-let currentTime = 10;
+let currentTime = 15; // 默认15秒，更适合小学生
 let isPlaying = false;
 let currentWordIndex = 0;
 let playerResults = {}; // { nickname: { word: correct } }
