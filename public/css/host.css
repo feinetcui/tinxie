@@ -29,29 +29,25 @@
   border-radius: 20px;
 }
 
-.qr-section {
+.room-number-section {
   text-align: center;
 }
 
-.qr-code {
-  display: flex;
-  justify-content: center;
+.room-number {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 20px 0;
+  letter-spacing: 10px;
 }
 
-.qr-code canvas {
-  border-radius: 8px;
-}
-
-.qr-hint {
+.room-hint {
   color: #666;
-  margin-bottom: 10px;
-}
-
-.room-url {
-  font-size: 0.8rem;
-  color: #999;
-  word-break: break-all;
+  font-size: 1rem;
 }
 
 .ocr-actions {

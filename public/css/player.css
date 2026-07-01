@@ -33,6 +33,14 @@
   margin-bottom: 30px;
 }
 
+#roomInput {
+  font-size: 2rem;
+  text-align: center;
+  letter-spacing: 8px;
+  font-weight: 600;
+  color: #667eea;
+}
+
 .btn-join {
   width: 100%;
   font-size: 1.1rem;

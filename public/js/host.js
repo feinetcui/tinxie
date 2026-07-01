@@ -22,19 +22,7 @@ async function init() {
 // 监听消息
 onMessage('room_created', (message) => {
   roomId = message.roomId;
-  document.getElementById('roomId').textContent = `房间号: ${roomId}`;
-
-  // 生成选手端扫码 URL
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  const playerUrl = `${protocol}//${host}/player.html?room=${roomId}`;
-  document.getElementById('roomUrl').textContent = playerUrl;
-
-  // 生成二维码
-  QRCode.toCanvas(document.getElementById('qrCode'), playerUrl, {
-    width: 200,
-    margin: 2
-  });
+  document.getElementById('roomNumberDisplay').textContent = roomId;
 });
 
 onMessage('player_joined', (message) => {

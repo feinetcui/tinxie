@@ -18,58 +18,44 @@ let practiceTotalRounds = 3;
 
 // 初始化
 async function init() {
-  // 检查 URL 参数
-  roomId = getUrlParam('room');
-  
-  if (roomId) {
-    // 从二维码跳转过来的，隐藏昵称输入
-    showElement('waitingSection');
-    hideElement('joinSection');
-    
-    // 显示昵称输入对话框
-    showNicknameDialog();
-  }
-
   // 初始化画布
   initCanvas();
-}
 
-function showNicknameDialog() {
-  const dialog = document.createElement('div');
-  dialog.className = 'nickname-dialog';
-  dialog.innerHTML = `
-    <div class="dialog-content">
-      <h3>输入昵称</h3>
-      <input type="text" id="dialogNickname" placeholder="请输入你的昵称" maxlength="10">
-      <button class="btn btn-primary" id="dialogConfirmBtn">确认</button>
-    </div>
-  `;
-  document.body.appendChild(dialog);
-  
-  document.getElementById('dialogConfirmBtn').addEventListener('click', async () => {
-    const input = document.getElementById('dialogNickname');
-    if (input.value.trim()) {
-      nickname = input.value.trim();
-      dialog.remove();
+  // 绑定输入事件
+  const roomInput = document.getElementById('roomInput');
+  const nicknameInput = document.getElementById('nicknameInput');
+  const joinBtn = document.getElementById('joinBtn');
+
+  function checkInputs() {
+    const roomOk = roomInput.value.trim().length === 4;
+    const nickOk = nicknameInput.value.trim().length > 0;
+    joinBtn.disabled = !(roomOk && nickOk);
+  }
+
+  roomInput.addEventListener('input', checkInputs);
+  nicknameInput.addEventListener('input', checkInputs);
+
+  // 加入按钮
+  joinBtn.addEventListener('click', async () => {
+    roomId = roomInput.value.trim();
+    nickname = nicknameInput.value.trim();
+    if (roomId && nickname) {
       await joinRoom();
     }
   });
-  
-  document.getElementById('dialogNickname').addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
-      const input = document.getElementById('dialogNickname');
-      if (input.value.trim()) {
-        nickname = input.value.trim();
-        dialog.remove();
-        await joinRoom();
-      }
+
+  // 回车加入
+  nicknameInput.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter' && !joinBtn.disabled) {
+      roomId = roomInput.value.trim();
+      nickname = nicknameInput.value.trim();
+      await joinRoom();
     }
   });
 }
 
 async function joinRoom() {
   try {
-    // 选手端连接时传入 room 和 nickname
     await connectWebSocket(roomId, nickname);
     sendWsMessage({
       type: 'join_room',
@@ -84,8 +70,8 @@ async function joinRoom() {
 
 // 监听消息
 onMessage('room_joined', (message) => {
-  showElement('waitingSection');
   hideElement('joinSection');
+  showElement('waitingSection');
 });
 
 onMessage('error', (message) => {
@@ -96,10 +82,10 @@ onMessage('round_started', (message) => {
   currentWords = message.words;
   currentWordIndex = 0;
   timeLimit = message.timeLimit;
-  
+
   hideElement('waitingSection');
   showElement('writingSection');
-  
+
   showCurrentWord();
   startTimer();
 });
@@ -110,13 +96,13 @@ onMessage('time_limit_updated', (message) => {
 
 onMessage('answer_result', (message) => {
   clearInterval(timerInterval);
-  
+
   showElement('resultFeedback');
-  
+
   const resultIcon = document.getElementById('resultIcon');
   const resultText = document.getElementById('resultText');
   const correctAnswer = document.getElementById('correctAnswer');
-  
+
   if (message.correct) {
     resultIcon.textContent = '✓';
     resultIcon.className = 'result-icon correct';
@@ -128,11 +114,11 @@ onMessage('answer_result', (message) => {
     resultText.textContent = '错误';
     correctAnswer.textContent = `正确答案：${message.word}`;
   }
-  
+
   setTimeout(() => {
     hideElement('resultFeedback');
     currentWordIndex++;
-    
+
     if (currentWordIndex < currentWords.length) {
       showCurrentWord();
       startTimer();
@@ -145,21 +131,21 @@ onMessage('answer_result', (message) => {
 onMessage('dictation_complete', (message) => {
   hideElement('writingSection');
   showElement('scoreSection');
-  
+
   const scoreList = document.getElementById('scoreList');
   scoreList.innerHTML = '';
-  
+
   let correctCount = 0;
   message.results.forEach(result => {
     const wordEl = document.createElement('span');
     wordEl.className = `score-word ${result.correct ? 'correct' : 'incorrect'}`;
     wordEl.textContent = `${result.correct ? '✓' : '✗'} ${result.word}`;
     scoreList.appendChild(wordEl);
-    
+
     if (result.correct) correctCount++;
   });
-  
-  document.getElementById('scoreSummary').textContent = 
+
+  document.getElementById('scoreSummary').textContent =
     `正确: ${correctCount}/${message.results.length}`;
 });
 
@@ -179,7 +165,7 @@ onMessage('practice_started', (message) => {
 onMessage('final_score', (message) => {
   hideElement('practiceSection');
   showElement('finalScoreSection');
-  
+
   const myScore = message.scores.find(s => s.nickname === nickname);
   if (myScore) {
     const accuracy = Math.round((myScore.correct / myScore.total) * 100);
@@ -204,9 +190,9 @@ onMessage('final_score', (message) => {
 function showCurrentWord() {
   const word = currentWords[currentWordIndex];
   document.getElementById('pinyinDisplay').textContent = toPinyin(word);
-  document.getElementById('wordProgress').textContent = 
+  document.getElementById('wordProgress').textContent =
     `${currentWordIndex + 1}/${currentWords.length}`;
-  
+
   clearCanvas(canvas, ctx);
 }
 
@@ -226,16 +212,16 @@ function startTimer() {
   const timerEl = document.getElementById('timer');
   timerEl.textContent = timeLeft;
   timerEl.classList.remove('warning');
-  
+
   clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     timeLeft--;
     timerEl.textContent = timeLeft;
-    
+
     if (timeLeft <= 3) {
       timerEl.classList.add('warning');
     }
-    
+
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
       autoSubmit();
@@ -248,16 +234,16 @@ function startPracticeTimer() {
   const timerEl = document.getElementById('practiceTimer');
   timerEl.textContent = timeLeft;
   timerEl.classList.remove('warning');
-  
+
   clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     timeLeft--;
     timerEl.textContent = timeLeft;
-    
+
     if (timeLeft <= 3) {
       timerEl.classList.add('warning');
     }
-    
+
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
       autoSubmitPractice();
@@ -275,10 +261,10 @@ function autoSubmitPractice() {
 
 function submitAnswer() {
   clearInterval(timerInterval);
-  
+
   const word = currentWords[currentWordIndex];
   const imageData = canvas.toDataURL('image/png').split(',')[1];
-  
+
   sendWsMessage({
     type: 'submit_answer',
     roomId,
@@ -365,7 +351,7 @@ function advancePractice() {
 function initCanvas() {
   canvas = document.getElementById('writingCanvas');
   ctx = canvas.getContext('2d');
-  
+
   // 设置画布大小
   function resizeCanvas() {
     const container = canvas.parentElement;
@@ -373,19 +359,19 @@ function initCanvas() {
     canvas.height = Math.min(300, window.innerHeight * 0.4);
     drawTianzige(ctx, canvas.width, canvas.height);
   }
-  
+
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
-  
+
   // 绘制田字格
   drawTianzige(ctx, canvas.width, canvas.height);
-  
+
   // 绑定事件
   canvas.addEventListener('mousedown', startDrawing);
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mouseup', stopDrawing);
   canvas.addEventListener('mouseout', stopDrawing);
-  
+
   canvas.addEventListener('touchstart', handleTouch);
   canvas.addEventListener('touchmove', handleTouch);
   canvas.addEventListener('touchend', stopDrawing);
@@ -393,40 +379,40 @@ function initCanvas() {
 
 function drawTianzige(ctx, width, height) {
   ctx.clearRect(0, 0, width, height);
-  
+
   // 背景
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, width, height);
-  
+
   // 计算格子大小
   const gridSize = Math.min(width / 3, height / 3);
   const startX = (width - gridSize * 3) / 2;
   const startY = (height - gridSize * 3) / 2;
-  
+
   // 绘制格子边框
   ctx.strokeStyle = '#ccc';
   ctx.lineWidth = 2;
-  
+
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       const x = startX + i * gridSize;
       const y = startY + j * gridSize;
-      
+
       // 外框
       ctx.strokeRect(x, y, gridSize, gridSize);
-      
+
       // 十字虚线
       ctx.beginPath();
       ctx.setLineDash([5, 5]);
-      
+
       // 横线
       ctx.moveTo(x, y + gridSize / 2);
       ctx.lineTo(x + gridSize, y + gridSize / 2);
-      
+
       // 竖线
       ctx.moveTo(x + gridSize / 2, y);
       ctx.lineTo(x + gridSize / 2, y + gridSize);
-      
+
       ctx.strokeStyle = '#ffcccc';
       ctx.stroke();
       ctx.setLineDash([]);
@@ -441,9 +427,9 @@ function startDrawing(e) {
 
 function draw(e) {
   if (!isDrawing) return;
-  
+
   const [x, y] = getCoords(e);
-  
+
   ctx.beginPath();
   ctx.moveTo(lastX, lastY);
   ctx.lineTo(x, y);
@@ -452,7 +438,7 @@ function draw(e) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.stroke();
-  
+
   [lastX, lastY] = [x, y];
 }
 
@@ -502,11 +488,9 @@ document.getElementById('practiceSubmitBtn').addEventListener('click', submitPra
 
 // 拼音转换
 function toPinyin(word) {
-  // 使用 pinyin-pro 库
   if (window.pinyinPro) {
     return window.pinyinPro.pinyin(word, { type: 'array' }).join(' ');
   }
-  // 如果 pinyin-pro 未加载，使用简单的映射
   const pinyinMap = {
     '春': 'chūn', '天': 'tiān', '花': 'huā', '朵': 'duǒ',
     '蝴': 'hú', '蝶': 'dié', '燕': 'yàn', '子': 'zi',
@@ -516,47 +500,6 @@ function toPinyin(word) {
   };
   return word.split('').map(char => pinyinMap[char] || char).join(' ');
 }
-
-// 添加样式
-const style = document.createElement('style');
-style.textContent = `
-  .nickname-dialog {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-  }
-  .dialog-content {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    width: 90%;
-    max-width: 300px;
-  }
-  .dialog-content h3 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  .dialog-content input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-    margin-bottom: 15px;
-  }
-  .dialog-content .btn {
-    width: 100%;
-  }
-`;
-document.head.appendChild(style);
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', init);

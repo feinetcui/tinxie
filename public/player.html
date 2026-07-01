@@ -14,7 +14,11 @@
       <div class="join-card">
         <h1>亲子听写对战</h1>
         <div class="input-group">
-          <label>输入昵称</label>
+          <label>房间号</label>
+          <input type="text" id="roomInput" placeholder="请输入4位房间号" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <div class="input-group">
+          <label>昵称</label>
           <input type="text" id="nicknameInput" placeholder="请输入你的昵称" maxlength="10">
         </div>
         <button class="btn btn-primary btn-join" id="joinBtn" disabled>加入房间</button>

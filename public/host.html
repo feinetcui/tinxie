@@ -12,18 +12,16 @@
     <header class="header">
       <h1>亲子听写对战</h1>
       <div class="room-info">
-        <span class="room-id" id="roomId">加载中...</span>
         <span class="player-count" id="playerCount">0 人在线</span>
       </div>
     </header>
 
     <div class="main-content">
-      <!-- 二维码区域 -->
-      <div class="card qr-section">
-        <div class="card-title">扫码加入</div>
-        <div class="qr-code" id="qrCode"></div>
-        <p class="qr-hint">选手扫描二维码加入房间</p>
-        <p class="room-url" id="roomUrl"></p>
+      <!-- 房间号显示 -->
+      <div class="card room-number-section">
+        <div class="card-title">房间号</div>
+        <div class="room-number" id="roomNumberDisplay">加载中...</div>
+        <p class="room-hint">选手输入房间号加入</p>
       </div>
 
       <!-- 拍照识别区域 -->
@@ -35,7 +33,7 @@
           <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
           <input type="file" id="fileInput" accept="image/*" style="display: none;">
         </div>
-        
+
         <div class="ocr-preview" id="ocrPreview" style="display: none;">
           <img id="previewImage" alt="预览">
           <div class="ocr-loading" id="ocrLoading">识别中...</div>
@@ -99,7 +97,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.25.0/dist/index.js"></script>
   <script src="js/common.js"></script>
   <script src="js/host.js"></script>
