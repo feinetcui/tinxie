@@ -86,7 +86,7 @@ async function callSenseNovaAI(messages, env) {
   const apiKey = env.SENSENOVA_API_KEY;
   console.log('Calling SenseNova AI, API key exists:', !!apiKey);
 
-  const response = await fetch('https://api.sensenova.cn/v1/chat/completions', {
+  const response = await fetch('https://token.sensenova.cn/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -95,7 +95,8 @@ async function callSenseNovaAI(messages, env) {
     body: JSON.stringify({
       model: 'sensenova-6.7-flash-lite',
       messages: messages,
-      temperature: 0.1
+      temperature: 0.1,
+      max_tokens: 2000
     })
   });
 
