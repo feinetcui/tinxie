@@ -1,16 +1,19 @@
 // 控制端逻辑
 let selectedWords = [];
-let currentTime = 15; // 默认15秒，更适合小学生
 let isPlaying = false;
 let currentWordIndex = 0;
 let playerResults = {}; // { nickname: { word: correct } }
 let playerNames = [];
 let allResults = []; // [{ word, correct }]
 
+// 排名追踪
+let playerStats = {}; // { nickname: { correct: 0, incorrect: 0, totalTime: 0 } }
+let roundStartTime = null;
+let lastSubmitTime = {}; // { nickname: timestamp } — 上一次提交时间
+
 // 初始化
 async function init() {
   try {
-    // 控制端连接时不传 room 和 nickname
     await connectWebSocket();
     sendWsMessage({ type: 'create_room' });
   } catch (error) {
@@ -27,16 +30,21 @@ onMessage('room_created', (message) => {
 
 onMessage('player_joined', (message) => {
   document.getElementById('playerCount').textContent = `${message.playerCount} 人在线`;
-  playerNames.push(message.nickname);
+  if (!playerNames.includes(message.nickname)) {
+    playerNames.push(message.nickname);
+  }
+  updatePlayerList();
   updatePlayerStatusList();
 });
 
 onMessage('player_left', (message) => {
   document.getElementById('playerCount').textContent = `${message.playerCount} 人在线`;
+  playerNames = playerNames.filter(n => n !== message.nickname);
+  updatePlayerList();
+  updatePlayerStatusList();
 });
 
 onMessage('answer_submitted', async (message) => {
-  // 调用 AI 检查手写
   try {
     const response = await fetch('/api/check-handwriting', {
       method: 'POST',
@@ -48,7 +56,6 @@ onMessage('answer_submitted', async (message) => {
     });
     const result = await response.json();
 
-    // 发送结果给选手
     sendWsMessage({
       type: 'answer_result',
       roomId,
@@ -64,10 +71,23 @@ onMessage('answer_submitted', async (message) => {
     }
     playerResults[message.nickname][message.word] = result.correct;
 
-    // 更新控制端状态
-    updatePlayerStatus(message.nickname, 'submitted');
+    // 更新排名统计
+    if (!playerStats[message.nickname]) {
+      playerStats[message.nickname] = { correct: 0, incorrect: 0, totalTime: 0 };
+    }
+    if (result.correct) {
+      playerStats[message.nickname].correct++;
+    } else {
+      playerStats[message.nickname].incorrect++;
+    }
 
-    // 检查是否所有玩家都已提交
+    // 计算本轮用时
+    if (roundStartTime && message.submittedAt) {
+      const wordTime = (message.submittedAt - roundStartTime) / 1000;
+      playerStats[message.nickname].totalTime += wordTime;
+    }
+
+    updatePlayerStatus(message.nickname, 'submitted');
     checkAllSubmitted();
   } catch (error) {
     console.error('Check handwriting error:', error);
@@ -137,15 +157,17 @@ async function processImage(file) {
 
       hideElement('ocrLoading');
 
-      if (result.success && result.words.length > 0) {
+      if (result.success && result.words && result.words.length > 0) {
         showWordSelection(result.words);
       } else {
-        alert('未能识别出词语，请尝试手动输入');
+        const errorMsg = result.error || '未能识别出词语';
+        console.error('OCR failed:', errorMsg);
+        alert(`识别失败：${errorMsg}\n请尝试手动输入词语`);
       }
     } catch (error) {
       hideElement('ocrLoading');
       console.error('OCR error:', error);
-      alert('识别失败，请重试');
+      alert(`网络错误：${error.message}\n请检查网络连接后重试`);
     }
   };
   reader.readAsDataURL(file);
@@ -212,10 +234,8 @@ function updateSelectedWords() {
     container.appendChild(tag);
   });
 
-  // 更新开始按钮状态
   document.getElementById('startBtn').disabled = selectedWords.length === 0;
 
-  // 显示/隐藏已选词语区域
   if (selectedWords.length > 0) {
     showElement('selectedWordsSection');
   } else {
@@ -223,48 +243,32 @@ function updateSelectedWords() {
   }
 }
 
-// 计时设置
-document.querySelectorAll('.timer-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentTime = parseInt(btn.dataset.time);
-    document.getElementById('currentTime').textContent = currentTime;
-  });
-});
-
-document.getElementById('customTime').addEventListener('change', (e) => {
-  const value = parseInt(e.target.value);
-  if (value >= 3 && value <= 60) {
-    document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-    currentTime = value;
-    document.getElementById('currentTime').textContent = currentTime;
-  }
-});
-
 // 开始听写
 document.getElementById('startBtn').addEventListener('click', () => {
   if (selectedWords.length === 0) return;
-
-  console.log('Starting dictation. Words:', selectedWords, 'Time:', currentTime);
-  console.log('Players:', playerNames);
 
   isPlaying = true;
   currentWordIndex = 0;
   playerResults = {};
   allResults = [];
+  playerStats = {};
+  lastSubmitTime = {};
+
+  // 初始化每个选手的统计
+  playerNames.forEach(name => {
+    playerStats[name] = { correct: 0, incorrect: 0, totalTime: 0 };
+  });
+
+  roundStartTime = Date.now();
 
   sendWsMessage({
     type: 'start_round',
     roomId,
-    words: selectedWords,
-    timeLimit: currentTime
+    words: selectedWords
   });
 
-  // 显示状态区域
   showElement('statusSection');
   hideElement('ocrSection');
-  hideElement('timerSection');
   hideElement('selectedWordsSection');
   document.getElementById('startBtn').disabled = true;
 
@@ -321,6 +325,26 @@ function updatePlayerStatusList() {
   });
 }
 
+function updatePlayerList() {
+  const section = document.getElementById('playerListSection');
+  const list = document.getElementById('playerList');
+
+  if (playerNames.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  list.innerHTML = '';
+
+  playerNames.forEach(name => {
+    const tag = document.createElement('span');
+    tag.className = 'player-tag';
+    tag.textContent = name;
+    list.appendChild(tag);
+  });
+}
+
 // 检查当前词语是否所有玩家都已提交
 function checkAllSubmitted() {
   const word = selectedWords[currentWordIndex];
@@ -329,7 +353,6 @@ function checkAllSubmitted() {
   );
 
   if (allSubmitted) {
-    // 记录当前词的结果
     let wordCorrect = true;
     playerNames.forEach(name => {
       if (playerResults[name] && playerResults[name][word] === false) {
@@ -341,14 +364,13 @@ function checkAllSubmitted() {
     currentWordIndex++;
 
     if (currentWordIndex < selectedWords.length) {
-      // 进入下一个词语
+      // 重置本轮开始时间（为下一词计时）
+      roundStartTime = Date.now();
       setTimeout(() => {
         updatePlayStatus(currentWordIndex);
-        // 重置所有玩家状态
         updatePlayerStatusList();
       }, 1000);
     } else {
-      // 听写完成
       finishDictation();
     }
   }
@@ -358,50 +380,59 @@ function checkAllSubmitted() {
 function finishDictation() {
   isPlaying = false;
 
-  // 显示成绩单
-  showElement('resultSection');
   hideElement('statusSection');
 
-  const resultList = document.getElementById('resultList');
-  resultList.innerHTML = '';
-
-  let correctCount = 0;
-  allResults.forEach(result => {
-    const wordEl = document.createElement('span');
-    wordEl.className = `result-word ${result.correct ? 'correct' : 'incorrect'}`;
-    wordEl.textContent = `${result.correct ? '✅' : '❌'} ${result.word}`;
-    resultList.appendChild(wordEl);
-    if (result.correct) correctCount++;
-  });
-
-  document.getElementById('resultSummary').textContent =
-    `正确: ${correctCount}/${allResults.length}    错误: ${allResults.length - correctCount}`;
-
   // 发送成绩单给选手
-  const playerFinalResults = playerNames.map(name => {
-    let correct = 0;
-    let total = selectedWords.length;
-    selectedWords.forEach(word => {
-      if (playerResults[name] && playerResults[name][word]) {
-        correct++;
-      }
-    });
-    return { player: name, nickname: name, correct, total };
-  });
-
   sendWsMessage({
     type: 'dictation_complete',
     roomId,
     results: allResults
   });
 
+  // 计算排名并发送
+  const rankings = calculateRanking();
+  sendWsMessage({
+    type: 'leaderboard',
+    roomId,
+    rankings
+  });
+
   // 检查是否有错题
   const wrongWords = allResults.filter(r => !r.correct).map(r => r.word);
   if (wrongWords.length > 0) {
-    showElement('startPracticeBtn');
+    document.getElementById('startPracticeBtn').style.display = '';
   } else {
-    hideElement('startPracticeBtn');
+    document.getElementById('startPracticeBtn').style.display = 'none';
   }
+}
+
+// 计算排名
+function calculateRanking() {
+  const rankings = playerNames.map(name => {
+    const stats = playerStats[name] || { correct: 0, incorrect: 0, totalTime: 0 };
+    const total = stats.correct + stats.incorrect;
+    const accuracy = total > 0 ? Math.round((stats.correct / total) * 100) : 0;
+    return {
+      nickname: name,
+      correct: stats.correct,
+      incorrect: stats.incorrect,
+      accuracy,
+      totalTime: Math.round(stats.totalTime * 10) / 10
+    };
+  });
+
+  // 排序：正确率降序，用时升序
+  rankings.sort((a, b) => {
+    if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+    return a.totalTime - b.totalTime;
+  });
+
+  // 添加排名
+  rankings.forEach((r, i) => {
+    r.rank = i + 1;
+  });
+
+  return rankings;
 }
 
 // 开始错题练习
@@ -409,7 +440,7 @@ document.getElementById('startPracticeBtn').addEventListener('click', () => {
   const wrongWords = allResults.filter(r => !r.correct).map(r => r.word);
   if (wrongWords.length === 0) return;
 
-  hideElement('resultSection');
+  hideElement('leaderboardOverlay');
   showElement('statusSection');
 
   sendWsMessage({
@@ -429,21 +460,21 @@ document.getElementById('startPracticeBtn').addEventListener('click', () => {
 // 结束
 document.getElementById('endBtn').addEventListener('click', () => {
   if (confirm('确定要结束听写吗？')) {
-    // 重置状态
     isPlaying = false;
     selectedWords = [];
     currentWordIndex = 0;
     playerResults = {};
     allResults = [];
+    playerStats = {};
+    lastSubmitTime = {};
 
-    hideElement('resultSection');
+    hideElement('leaderboardOverlay');
     hideElement('statusSection');
     hideElement('selectedWordsSection');
     document.getElementById('startBtn').disabled = true;
     document.getElementById('wordList').innerHTML = '';
 
     showElement('ocrSection');
-    showElement('timerSection');
   }
 });
 
@@ -462,5 +493,4 @@ function toPinyin(word) {
   return word.split('').map(char => pinyinMap[char] || char).join(' ');
 }
 
-// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', init);

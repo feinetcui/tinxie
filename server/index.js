@@ -100,22 +100,7 @@ function handleMessage(ws, message, req) {
           if (player.ws.readyState === WebSocket.OPEN) {
             player.ws.send(JSON.stringify({
               type: 'round_started',
-              words: message.words,
-              timeLimit: message.timeLimit
-            }));
-          }
-        });
-      }
-      break;
-
-    case 'update_time_limit':
-      const updateRoom = roomManager.getRoom(message.roomId);
-      if (updateRoom) {
-        updateRoom.players.forEach(player => {
-          if (player.ws.readyState === WebSocket.OPEN) {
-            player.ws.send(JSON.stringify({
-              type: 'time_limit_updated',
-              timeLimit: message.timeLimit
+              words: message.words
             }));
           }
         });
@@ -129,7 +114,8 @@ function handleMessage(ws, message, req) {
           type: 'answer_submitted',
           nickname: message.nickname,
           word: message.word,
-          image: message.image
+          image: message.image,
+          submittedAt: message.submittedAt
         }));
       }
       break;
@@ -157,6 +143,20 @@ function handleMessage(ws, message, req) {
             player.ws.send(JSON.stringify({
               type: 'dictation_complete',
               results: message.results
+            }));
+          }
+        });
+      }
+      break;
+
+    case 'leaderboard':
+      const lbRoom = roomManager.getRoom(message.roomId);
+      if (lbRoom) {
+        lbRoom.players.forEach(player => {
+          if (player.ws.readyState === WebSocket.OPEN) {
+            player.ws.send(JSON.stringify({
+              type: 'leaderboard',
+              rankings: message.rankings
             }));
           }
         });

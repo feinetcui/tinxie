@@ -86,6 +86,9 @@ async function handleHandwritingCheck(request, env) {
 // 调用 SenseNova AI
 async function callSenseNovaAI(messages, env) {
   const apiKey = env.SENSENOVA_API_KEY;
+  if (!apiKey) {
+    throw new Error('未配置 SENSENOVA_API_KEY 环境变量，请在 Cloudflare Dashboard 中添加');
+  }
   console.log('Calling SenseNova AI, API key exists:', !!apiKey);
   console.log('Messages count:', messages.length);
 
@@ -114,10 +117,13 @@ async function callSenseNovaAI(messages, env) {
 
   if (!response.ok) {
     console.error('SenseNova AI error:', responseText);
-    throw new Error(`SenseNova AI API error: ${responseText}`);
+    throw new Error(`SenseNova AI API 错误 (${response.status}): ${responseText.substring(0, 200)}`);
   }
 
   const data = JSON.parse(responseText);
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error(`SenseNova AI 返回格式异常: ${responseText.substring(0, 200)}`);
+  }
   return data.choices[0].message.content;
 }
 
@@ -158,14 +164,14 @@ async function recognizeText(imageBase64, env) {
     cleanBase64 = cleanBase64.replace(/^data:image\/\w+;base64,/, '');
   }
 
-  // 上传图片获取 URL
+  // 优先尝试直接用 base64 传给 SenseNova API
   let imageUrl;
   try {
-    imageUrl = await uploadImageToTempHost(cleanBase64);
-    console.log('Image uploaded to:', imageUrl);
-  } catch (uploadError) {
-    console.error('Image upload error:', uploadError.message);
-    throw new Error('图片上传失败，请重试');
+    imageUrl = `data:image/jpeg;base64,${cleanBase64}`;
+    console.log('Using base64 directly for SenseNova API');
+  } catch (e) {
+    console.error('Base64 preparation failed:', e.message);
+    throw new Error('图片数据处理失败');
   }
 
   const messages = [
@@ -190,6 +196,10 @@ async function recognizeText(imageBase64, env) {
   const result = await callSenseNovaAI(messages, env);
   console.log('OCR result:', result);
 
+  if (!result) {
+    throw new Error('SenseNova AI 未返回识别结果');
+  }
+
   try {
     const jsonMatch = result.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
@@ -197,7 +207,10 @@ async function recognizeText(imageBase64, env) {
     }
     return JSON.parse(result);
   } catch (e) {
-    return result.split('\n').filter(line => line.trim().length > 0);
+    if (result && typeof result === 'string') {
+      return result.split('\n').filter(line => line.trim().length > 0);
+    }
+    throw new Error('无法解析 OCR 结果');
   }
 }
 
@@ -209,13 +222,8 @@ async function checkHandwriting(imageBase64, correctWord, env) {
     cleanBase64 = cleanBase64.replace(/^data:image\/\w+;base64,/, '');
   }
 
-  // 上传图片获取 URL
-  let imageUrl;
-  try {
-    imageUrl = await uploadImageToTempHost(cleanBase64);
-  } catch (uploadError) {
-    throw new Error('图片上传失败，请重试');
-  }
+  // 直接用 base64 传给 SenseNova API
+  const imageUrl = `data:image/jpeg;base64,${cleanBase64}`;
 
   const messages = [
     {
@@ -236,6 +244,10 @@ async function checkHandwriting(imageBase64, correctWord, env) {
   ];
 
   const result = await callSenseNovaAI(messages, env);
+
+  if (!result) {
+    throw new Error('SenseNova AI 未返回识别结果');
+  }
 
   try {
     const jsonMatch = result.match(/\{[\s\S]*?\}/);

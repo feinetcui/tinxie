@@ -6,7 +6,6 @@ export class Room {
     this.players = new Map(); // nickname -> { ws, wsKey }
     this.host = null; // { ws, wsKey }
     this.words = [];
-    this.currentTime = 10;
     this.currentWordIndex = 0;
     this.isPracticing = false;
 
@@ -150,22 +149,12 @@ export class Room {
           console.log('Starting round. Host:', this.host ? 'connected' : 'null', 'Players:', this.players.size);
           console.log('Words:', data.words);
           this.words = data.words;
-          this.currentTime = data.timeLimit;
           this.currentWordIndex = 0;
           this.isPracticing = false;
           console.log('Broadcasting round_started to', this.players.size, 'players');
           this.broadcastToPlayers({
             type: 'round_started',
-            words: data.words,
-            timeLimit: data.timeLimit
-          });
-          break;
-
-        case 'update_time_limit':
-          this.currentTime = data.timeLimit;
-          this.broadcastToPlayers({
-            type: 'time_limit_updated',
-            timeLimit: data.timeLimit
+            words: data.words
           });
           break;
 
@@ -174,7 +163,8 @@ export class Room {
             type: 'answer_submitted',
             nickname: data.nickname,
             word: data.word,
-            image: data.image
+            image: data.image,
+            submittedAt: data.submittedAt
           });
           break;
 
@@ -195,6 +185,13 @@ export class Room {
           this.broadcastToPlayers({
             type: 'dictation_complete',
             results: data.results
+          });
+          break;
+
+        case 'leaderboard':
+          this.broadcastToPlayers({
+            type: 'leaderboard',
+            rankings: data.rankings
           });
           break;
 

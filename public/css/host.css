@@ -111,39 +111,6 @@
   outline: none;
 }
 
-/* 计时设置 */
-.timer-section {
-  text-align: center;
-  padding: 25px;
-}
-
-.timer-buttons {
-  justify-content: center;
-  margin-bottom: 20px;
-  gap: 12px;
-}
-
-.custom-time-input {
-  width: 100px;
-  padding: 12px;
-  border: 3px solid #ddd;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.custom-time-input:focus {
-  border-color: #667eea;
-  outline: none;
-}
-
-.current-time {
-  color: #666;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
 /* 已选词语 */
 .selected-words-section {
   display: flex;
@@ -269,31 +236,96 @@
   flex-wrap: wrap;
 }
 
+/* 已加入选手列表 */
+.player-list-section {
+  padding: 20px;
+}
+
+.player-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.player-tag {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
+    padding: 15px 0;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
   }
 
   .room-number {
     font-size: 3.5rem;
     letter-spacing: 8px;
+    margin: 15px 0;
   }
 
   .ocr-actions {
     flex-direction: column;
+    gap: 10px;
   }
 
-  .timer-buttons {
-    flex-wrap: wrap;
+  .ocr-actions .btn {
+    width: 100%;
+    min-height: 48px;
   }
 
   .result-actions {
     flex-direction: column;
+    gap: 10px;
   }
 
   .btn-start {
     width: 100%;
+    min-height: 52px;
+  }
+
+  .start-section {
+    margin: 20px 0;
+  }
+
+  .current-word {
+    font-size: 1.8rem;
+  }
+
+  .player-item {
+    padding: 12px;
+  }
+
+  .result-word {
+    padding: 10px 14px;
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .room-number {
+    font-size: 2.8rem;
+    letter-spacing: 6px;
+  }
+
+  .btn-start {
+    font-size: 1.2rem;
+    padding: 16px;
+  }
+
+  .current-word {
+    font-size: 1.5rem;
   }
 }

@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>亲子听写对战 - 控制端</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/host.css">
 </head>
@@ -15,6 +16,12 @@
         <span class="player-count" id="playerCount">0 人在线</span>
       </div>
     </header>
+
+    <!-- 已加入选手列表 -->
+    <div class="card player-list-section" id="playerListSection" style="display: none;">
+      <div class="card-title">👥 已加入选手</div>
+      <div class="player-list" id="playerList"></div>
+    </div>
 
     <div class="main-content">
       <!-- 房间号显示 -->
@@ -50,19 +57,6 @@
           <textarea id="manualWords" placeholder="春天&#10;花朵&#10;蝴蝶" rows="6"></textarea>
           <button class="btn btn-primary" id="confirmManualBtn">确认添加</button>
         </div>
-      </div>
-
-      <!-- 计时设置 -->
-      <div class="card timer-section" id="timerSection">
-        <div class="card-title">⏱️ 计时设置</div>
-        <div class="timer-buttons">
-          <button class="timer-btn" data-time="5">5秒</button>
-          <button class="timer-btn" data-time="10">10秒</button>
-          <button class="timer-btn active" data-time="15">15秒</button>
-          <button class="timer-btn" data-time="20">20秒</button>
-          <input type="number" id="customTime" min="3" max="60" placeholder="自定义" class="custom-time-input">
-        </div>
-        <p class="current-time">当前设置：<span id="currentTime">15</span> 秒</p>
       </div>
 
       <!-- 已选词语 -->

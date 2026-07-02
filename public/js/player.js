@@ -2,13 +2,24 @@
 let nickname = '';
 let currentWords = [];
 let currentWordIndex = 0;
-let timeLimit = 15; // 默认15秒，更适合小学生
-let timerInterval = null;
 let canvas = null;
 let ctx = null;
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
+let lastMidX = 0;
+let lastMidY = 0;
+
+// Canvas DPR 和撤销历史
+let dpr = 1;
+let canvasHistory = [];
+let practiceCanvasHistory = [];
+const MAX_HISTORY = 20;
+
+// 正计时
+let elapsedSeconds = 0;
+let elapsedInterval = null;
+let roundStartTime = null;
 
 // 错题练习状态
 let practiceWords = [];
@@ -21,10 +32,9 @@ const speechSynth = window.speechSynthesis;
 
 // 音效系统
 const audioEffects = {
-  correct: () => playTone(880, 0.2, 'sine'), // 叮咚
-  wrong: () => playTone(220, 0.3, 'sawtooth'), // 低沉提示
-  tick: () => playTone(1000, 0.1, 'sine'), // 倒计时滴答
-  finish: () => { // 欢呼声
+  correct: () => playTone(880, 0.2, 'sine'),
+  wrong: () => playTone(220, 0.3, 'sawtooth'),
+  finish: () => {
     playTone(523, 0.15, 'sine');
     setTimeout(() => playTone(659, 0.15, 'sine'), 150);
     setTimeout(() => playTone(784, 0.3, 'sine'), 300);
@@ -36,16 +46,12 @@ function playTone(frequency, duration, type = 'sine') {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-
     oscillator.frequency.value = frequency;
     oscillator.type = type;
-
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-
     oscillator.start(audioCtx.currentTime);
     oscillator.stop(audioCtx.currentTime + duration);
   } catch (e) {
@@ -53,27 +59,68 @@ function playTone(frequency, duration, type = 'sine') {
   }
 }
 
-// 语音播报函数
+// 触觉反馈
+function vibrate(pattern) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+}
+
+// 语音播报
 function speakWord(word) {
   if (!speechSynth) return;
-
-  // 取消之前的语音
   speechSynth.cancel();
-
   const utterance = new SpeechSynthesisUtterance(word);
   utterance.lang = 'zh-CN';
-  utterance.rate = 0.8; // 慢速，适合小学生
-  utterance.pitch = 1.1; // 稍高音调，更亲切
-
+  utterance.rate = 0.8;
+  utterance.pitch = 1.1;
   speechSynth.speak(utterance);
+}
+
+// ============ 正计时 ============
+function startElapsedTime() {
+  elapsedSeconds = 0;
+  roundStartTime = Date.now();
+  const timerEl = document.getElementById('timer');
+  timerEl.textContent = '0s';
+
+  clearInterval(elapsedInterval);
+  elapsedInterval = setInterval(() => {
+    elapsedSeconds++;
+    timerEl.textContent = elapsedSeconds + 's';
+  }, 1000);
+}
+
+function stopElapsedTime() {
+  clearInterval(elapsedInterval);
+}
+
+// 练习模式正计时
+let practiceElapsedSeconds = 0;
+let practiceElapsedInterval = null;
+let practiceRoundStartTime = null;
+
+function startPracticeElapsedTime() {
+  practiceElapsedSeconds = 0;
+  practiceRoundStartTime = Date.now();
+  const timerEl = document.getElementById('practiceTimer');
+  timerEl.textContent = '0s';
+
+  clearInterval(practiceElapsedInterval);
+  practiceElapsedInterval = setInterval(() => {
+    practiceElapsedSeconds++;
+    timerEl.textContent = practiceElapsedSeconds + 's';
+  }, 1000);
+}
+
+function stopPracticeElapsedTime() {
+  clearInterval(practiceElapsedInterval);
 }
 
 // 初始化
 async function init() {
-  // 初始化画布
   initCanvas();
 
-  // 绑定输入事件
   const roomInput = document.getElementById('roomInput');
   const nicknameInput = document.getElementById('nicknameInput');
   const joinBtn = document.getElementById('joinBtn');
@@ -87,7 +134,6 @@ async function init() {
   roomInput.addEventListener('input', checkInputs);
   nicknameInput.addEventListener('input', checkInputs);
 
-  // 加入按钮
   joinBtn.addEventListener('click', async () => {
     roomId = roomInput.value.trim();
     nickname = nicknameInput.value.trim();
@@ -96,7 +142,6 @@ async function init() {
     }
   });
 
-  // 回车加入
   nicknameInput.addEventListener('keypress', async (e) => {
     if (e.key === 'Enter' && !joinBtn.disabled) {
       roomId = roomInput.value.trim();
@@ -131,24 +176,20 @@ onMessage('error', (message) => {
 });
 
 onMessage('round_started', (message) => {
-  console.log('Round started! Words:', message.words, 'Time:', message.timeLimit);
+  console.log('Round started! Words:', message.words);
   currentWords = message.words;
   currentWordIndex = 0;
-  timeLimit = message.timeLimit;
 
   hideElement('waitingSection');
   showElement('writingSection');
 
   showCurrentWord();
-  startTimer();
-});
-
-onMessage('time_limit_updated', (message) => {
-  timeLimit = message.timeLimit;
+  startElapsedTime();
 });
 
 onMessage('answer_result', (message) => {
-  clearInterval(timerInterval);
+  vibrate(message.correct ? [50] : [100, 50, 100]);
+  stopElapsedTime();
 
   showElement('resultFeedback');
 
@@ -176,38 +217,24 @@ onMessage('answer_result', (message) => {
 
     if (currentWordIndex < currentWords.length) {
       showCurrentWord();
-      startTimer();
+      startElapsedTime();
     } else {
-      // 听写完成，等待成绩单
       audioEffects.finish();
-    }
     }
   }, 2000);
 });
 
 onMessage('dictation_complete', (message) => {
+  // 不再显示简单成绩单，等待 leaderboard 消息
+});
+
+onMessage('leaderboard', (message) => {
   hideElement('writingSection');
-  showElement('scoreSection');
-
-  const scoreList = document.getElementById('scoreList');
-  scoreList.innerHTML = '';
-
-  let correctCount = 0;
-  message.results.forEach(result => {
-    const wordEl = document.createElement('span');
-    wordEl.className = `score-word ${result.correct ? 'correct' : 'incorrect'}`;
-    wordEl.textContent = `${result.correct ? '✓' : '✗'} ${result.word}`;
-    scoreList.appendChild(wordEl);
-
-    if (result.correct) correctCount++;
-  });
-
-  document.getElementById('scoreSummary').textContent =
-    `正确: ${correctCount}/${message.results.length}`;
+  showLeaderboard(message.rankings);
 });
 
 onMessage('practice_started', (message) => {
-  hideElement('scoreSection');
+  hideElement('leaderboardOverlay');
   showElement('practiceSection');
 
   practiceWords = message.words;
@@ -216,32 +243,11 @@ onMessage('practice_started', (message) => {
   practiceTotalRounds = message.totalRounds || 3;
 
   showPracticeWord();
-  startPracticeTimer();
+  startPracticeElapsedTime();
 });
 
 onMessage('final_score', (message) => {
-  hideElement('practiceSection');
-  showElement('finalScoreSection');
-
-  const myScore = message.scores.find(s => s.nickname === nickname);
-  if (myScore) {
-    const accuracy = Math.round((myScore.correct / myScore.total) * 100);
-    document.getElementById('finalScoreNumber').textContent = `${accuracy}%`;
-    document.getElementById('finalStats').innerHTML = `
-      <div class="final-stat">
-        <div class="final-stat-number">${myScore.correct}</div>
-        <div class="final-stat-label">正确</div>
-      </div>
-      <div class="final-stat">
-        <div class="final-stat-number">${myScore.total - myScore.correct}</div>
-        <div class="final-stat-label">错误</div>
-      </div>
-      <div class="final-stat">
-        <div class="final-stat-number">${myScore.practiceCorrect || 0}</div>
-        <div class="final-stat-label">练习正确</div>
-      </div>
-    `;
-  }
+  // 不再使用，由 leaderboard 替代
 });
 
 function showCurrentWord() {
@@ -250,9 +256,9 @@ function showCurrentWord() {
   document.getElementById('wordProgress').textContent =
     `${currentWordIndex + 1}/${currentWords.length}`;
 
+  canvasHistory = [];
   clearCanvas(canvas, ctx);
 
-  // 语音播报词语
   setTimeout(() => speakWord(word), 500);
 }
 
@@ -263,72 +269,16 @@ function showPracticeWord() {
   document.getElementById('practiceProgress').textContent =
     `第${practiceRound}次 / 共${practiceTotalRounds}次`;
 
-  clearCanvas(document.getElementById('practiceCanvas'),
-              document.getElementById('practiceCanvas').getContext('2d'));
+  practiceCanvasHistory = [];
+  const pc = document.getElementById('practiceCanvas');
+  clearCanvas(pc, pc.getContext('2d'));
 
-  // 语音播报词语
   setTimeout(() => speakWord(word), 500);
 }
 
-function startTimer() {
-  let timeLeft = timeLimit;
-  const timerEl = document.getElementById('timer');
-  timerEl.textContent = timeLeft;
-  timerEl.classList.remove('warning');
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-
-    // 最后5秒播放提示音
-    if (timeLeft <= 5 && timeLeft > 0) {
-      audioEffects.tick();
-    }
-
-    if (timeLeft <= 3) {
-      timerEl.classList.add('warning');
-    }
-
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      autoSubmit();
-    }
-  }, 1000);
-}
-
-function startPracticeTimer() {
-  let timeLeft = timeLimit;
-  const timerEl = document.getElementById('practiceTimer');
-  timerEl.textContent = timeLeft;
-  timerEl.classList.remove('warning');
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-
-    if (timeLeft <= 3) {
-      timerEl.classList.add('warning');
-    }
-
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      autoSubmitPractice();
-    }
-  }, 1000);
-}
-
-function autoSubmit() {
-  submitAnswer();
-}
-
-function autoSubmitPractice() {
-  submitPracticeAnswer();
-}
-
 function submitAnswer() {
-  clearInterval(timerInterval);
+  vibrate(50);
+  stopElapsedTime();
 
   const word = currentWords[currentWordIndex];
   const imageData = canvas.toDataURL('image/png').split(',')[1];
@@ -338,18 +288,19 @@ function submitAnswer() {
     roomId,
     nickname,
     word,
-    image: imageData
+    image: imageData,
+    submittedAt: Date.now()
   });
 }
 
 function submitPracticeAnswer() {
-  clearInterval(timerInterval);
+  vibrate(50);
+  stopPracticeElapsedTime();
 
   const word = practiceWords[practiceWordIndex];
   const practiceCanvas = document.getElementById('practiceCanvas');
   const imageData = practiceCanvas.toDataURL('image/png').split(',')[1];
 
-  // 检查手写
   fetch('/api/check-handwriting', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -366,7 +317,7 @@ function submitPracticeAnswer() {
       correct: result.correct
     });
 
-    // 显示结果反馈
+    vibrate(result.correct ? [50] : [100, 50, 100]);
     showElement('resultFeedback');
     const resultIcon = document.getElementById('resultIcon');
     const resultText = document.getElementById('resultText');
@@ -395,12 +346,10 @@ function advancePractice() {
   practiceRound++;
 
   if (practiceRound > practiceTotalRounds) {
-    // 当前词练习完毕，进入下一个词
     practiceRound = 1;
     practiceWordIndex++;
 
     if (practiceWordIndex >= practiceWords.length) {
-      // 全部练习完成
       hideElement('practiceSection');
       sendWsMessage({
         type: 'practice_complete',
@@ -412,142 +361,290 @@ function advancePractice() {
   }
 
   showPracticeWord();
-  startPracticeTimer();
+  startPracticeElapsedTime();
 }
 
-// 画布初始化
+// ============ 排名显示 ============
+function showLeaderboard(rankings) {
+  const list = document.getElementById('leaderboardList');
+  const selfEl = document.getElementById('leaderboardSelf');
+  list.innerHTML = '';
+
+  const medals = ['🥇', '🥈', '🥉'];
+
+  rankings.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'leaderboard-item';
+    if (r.nickname === nickname) item.classList.add('self');
+    if (r.rank === 1) item.classList.add('rank-1');
+
+    const rankDisplay = r.rank <= 3 ? medals[r.rank - 1] : r.rank;
+
+    item.innerHTML = `
+      <div class="leaderboard-rank">${rankDisplay}</div>
+      <div class="leaderboard-name">${r.nickname}</div>
+      <div class="leaderboard-stats">
+        <span class="correct">${r.correct}✓</span>
+        <span class="incorrect">${r.incorrect}✗</span>
+        <span class="time">${r.totalTime}s</span>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+
+  // 显示当前用户个人成绩
+  const myResult = rankings.find(r => r.nickname === nickname);
+  if (myResult) {
+    selfEl.textContent = `你的成绩：${myResult.correct}✓ ${myResult.incorrect}✗  ${myResult.totalTime}s`;
+    selfEl.style.display = '';
+  } else {
+    selfEl.style.display = 'none';
+  }
+
+  showElement('leaderboardOverlay');
+}
+
+// ============ 画布初始化 ============
 function initCanvas() {
   canvas = document.getElementById('writingCanvas');
   ctx = canvas.getContext('2d');
+  dpr = window.devicePixelRatio || 1;
 
-  // 设置画布大小
   function resizeCanvas() {
     const container = canvas.parentElement;
-    canvas.width = container.clientWidth - 20;
-    canvas.height = Math.min(300, window.innerHeight * 0.4);
-    drawTianzige(ctx, canvas.width, canvas.height);
+    const displayWidth = container.clientWidth - 16;
+    const maxHeight = Math.min(350, window.innerHeight * 0.45);
+
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = maxHeight + 'px';
+    canvas.width = displayWidth * dpr;
+    canvas.height = maxHeight * dpr;
+
+    ctx.scale(dpr, dpr);
+    redrawCanvas(ctx, canvasHistory, displayWidth, maxHeight);
   }
 
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    const container = canvas.parentElement;
+    const displayWidth = container.clientWidth - 16;
+    const maxHeight = Math.min(350, window.innerHeight * 0.45);
 
-  // 绘制田字格
-  drawTianzige(ctx, canvas.width, canvas.height);
+    if (canvasHistory.length > 0) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      canvasHistory.push(imageData);
+    }
 
-  // 绑定事件
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = maxHeight + 'px';
+    canvas.width = displayWidth * dpr;
+    canvas.height = maxHeight * dpr;
+
+    ctx.scale(dpr, dpr);
+    redrawCanvas(ctx, canvasHistory, displayWidth, maxHeight);
+  });
+
+  drawTianzige(ctx, parseFloat(canvas.style.width), parseFloat(canvas.style.height));
+
   canvas.addEventListener('mousedown', startDrawing);
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mouseup', stopDrawing);
   canvas.addEventListener('mouseout', stopDrawing);
 
-  canvas.addEventListener('touchstart', handleTouch);
-  canvas.addEventListener('touchmove', handleTouch);
-  canvas.addEventListener('touchend', stopDrawing);
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 }
 
-function drawTianzige(ctx, width, height) {
-  ctx.clearRect(0, 0, width, height);
-
-  // 背景
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
-
-  // 计算格子大小
-  const gridSize = Math.min(width / 3, height / 3);
-  const startX = (width - gridSize * 3) / 2;
-  const startY = (height - gridSize * 3) / 2;
-
-  // 绘制格子边框
-  ctx.strokeStyle = '#ccc';
-  ctx.lineWidth = 2;
-
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      const x = startX + i * gridSize;
-      const y = startY + j * gridSize;
-
-      // 外框
-      ctx.strokeRect(x, y, gridSize, gridSize);
-
-      // 十字虚线
-      ctx.beginPath();
-      ctx.setLineDash([5, 5]);
-
-      // 横线
-      ctx.moveTo(x, y + gridSize / 2);
-      ctx.lineTo(x + gridSize, y + gridSize / 2);
-
-      // 竖线
-      ctx.moveTo(x + gridSize / 2, y);
-      ctx.lineTo(x + gridSize / 2, y + gridSize);
-
-      ctx.strokeStyle = '#ffcccc';
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
+// ============ 触摸处理 ============
+function getCanvasCoords(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return [touch.clientX - rect.left, touch.clientY - rect.top];
 }
 
-function startDrawing(e) {
+function handleTouchStart(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const [x, y] = getCanvasCoords(touch);
   isDrawing = true;
-  [lastX, lastY] = getCoords(e);
+  lastX = x;
+  lastY = y;
+  lastMidX = x;
+  lastMidY = y;
+  saveCanvasState(canvasHistory);
 }
 
-function draw(e) {
+function handleTouchMove(e) {
+  e.preventDefault();
   if (!isDrawing) return;
 
-  const [x, y] = getCoords(e);
+  const touch = e.touches[0];
+  const [x, y] = getCanvasCoords(touch);
+  const midX = (lastX + x) / 2;
+  const midY = (lastY + y) / 2;
 
   ctx.beginPath();
-  ctx.moveTo(lastX, lastY);
-  ctx.lineTo(x, y);
+  ctx.moveTo(lastMidX, lastMidY);
+  ctx.quadraticCurveTo(lastX, lastY, midX, midY);
   ctx.strokeStyle = '#333';
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.stroke();
 
-  [lastX, lastY] = [x, y];
+  lastX = x;
+  lastY = y;
+  lastMidX = midX;
+  lastMidY = midY;
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  isDrawing = false;
+  lastMidX = lastX;
+  lastMidY = lastY;
+}
+
+// ============ 鼠标处理 ============
+function startDrawing(e) {
+  isDrawing = true;
+  const [x, y] = getMouseCoords(e);
+  lastX = x;
+  lastY = y;
+  lastMidX = x;
+  lastMidY = y;
+  saveCanvasState(canvasHistory);
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+
+  const [x, y] = getMouseCoords(e);
+  const midX = (lastX + x) / 2;
+  const midY = (lastY + y) / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(lastMidX, lastMidY);
+  ctx.quadraticCurveTo(lastX, lastY, midX, midY);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  lastX = x;
+  lastY = y;
+  lastMidX = midX;
+  lastMidY = midY;
 }
 
 function stopDrawing() {
   isDrawing = false;
 }
 
-function handleTouch(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  const mouseEvent = new MouseEvent(
-    e.type === 'touchstart' ? 'mousedown' : 'mousemove',
-    {
-      clientX: touch.clientX,
-      clientY: touch.clientY
-    }
-  );
-  canvas.dispatchEvent(mouseEvent);
-}
-
-function getCoords(e) {
+function getMouseCoords(e) {
   const rect = canvas.getBoundingClientRect();
-  return [
-    e.clientX - rect.left,
-    e.clientY - rect.top
-  ];
+  return [e.clientX - rect.left, e.clientY - rect.top];
 }
 
-function clearCanvas(canvas, ctx) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawTianzige(ctx, canvas.width, canvas.height);
+// ============ 撤销功能 ============
+function saveCanvasState(history) {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  history.push(imageData);
+  if (history.length > MAX_HISTORY) {
+    history.shift();
+  }
+}
+
+function undo(history) {
+  if (history.length === 0) return;
+  const imageData = history.pop();
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// ============ 画布绘制 ============
+function drawTianzige(ctx, width, height) {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+
+  const gridSize = Math.min(width / 3, height / 3);
+  const startX = (width - gridSize * 3) / 2;
+  const startY = (height - gridSize * 3) / 2;
+
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 1.5;
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const x = startX + i * gridSize;
+      const y = startY + j * gridSize;
+
+      ctx.strokeRect(x, y, gridSize, gridSize);
+
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+
+      ctx.moveTo(x, y + gridSize / 2);
+      ctx.lineTo(x + gridSize, y + gridSize / 2);
+
+      ctx.moveTo(x + gridSize / 2, y);
+      ctx.lineTo(x + gridSize / 2, y + gridSize);
+
+      ctx.strokeStyle = '#ffcccc';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1.5;
+    }
+  }
+}
+
+function redrawCanvas(ctx, history, width, height) {
+  if (history.length > 0) {
+    const imageData = history[history.length - 1];
+    ctx.putImageData(imageData, 0, 0);
+  } else {
+    drawTianzige(ctx, width, height);
+  }
+}
+
+function clearCanvas(targetCanvas, targetCtx) {
+  const w = parseFloat(targetCanvas.style.width);
+  const h = parseFloat(targetCanvas.style.height);
+  targetCtx.setTransform(1, 0, 0, 1, 0, 0);
+  targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  targetCtx.scale(dpr, dpr);
+  drawTianzige(targetCtx, w, h);
 }
 
 // 清除按钮
 document.getElementById('clearBtn').addEventListener('click', () => {
+  vibrate(20);
+  canvasHistory = [];
   clearCanvas(canvas, ctx);
 });
 
 document.getElementById('practiceClearBtn').addEventListener('click', () => {
-  const practiceCanvas = document.getElementById('practiceCanvas');
-  clearCanvas(practiceCanvas, practiceCanvas.getContext('2d'));
+  vibrate(20);
+  practiceCanvasHistory = [];
+  const pc = document.getElementById('practiceCanvas');
+  clearCanvas(pc, pc.getContext('2d'));
+});
+
+// 撤销按钮
+document.getElementById('undoBtn').addEventListener('click', () => {
+  vibrate(15);
+  undo(canvasHistory);
+});
+
+document.getElementById('practiceUndoBtn').addEventListener('click', () => {
+  vibrate(15);
+  const pc = document.getElementById('practiceCanvas');
+  const pcCtx = pc.getContext('2d');
+  if (practiceCanvasHistory.length === 0) return;
+  const imageData = practiceCanvasHistory.pop();
+  pcCtx.putImageData(imageData, 0, 0);
 });
 
 // 提交按钮
@@ -569,5 +666,4 @@ function toPinyin(word) {
   return word.split('').map(char => pinyinMap[char] || char).join(' ');
 }
 
-// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', init);
